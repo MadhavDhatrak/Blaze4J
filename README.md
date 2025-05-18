@@ -1,6 +1,6 @@
 # BlazeWrapper
 
-A Java wrapper for the Blaze library using JNI (Java Native Interface).
+A Java wrapper for the Blaze library using FFM 
 
 ## Project Structure
 
