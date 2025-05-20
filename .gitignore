@@ -29,3 +29,7 @@ CMakeCache.txt
 Thumbs.db
 
 .gitmodules
+
+*.log
+# Ignore test resources
+src/test/resources/
