@@ -7,13 +7,58 @@
 #include <sstream>
 #include <iostream>
 #include <cstdint>
+#include <cstdlib>
+#include <optional>
+#include <mutex>
+#include <unordered_map>
+#include <memory>
+
+
+extern "C" {
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void blaze_free_string(char* ptr);
+}
+
+
+thread_local const char* (*current_custom_resolver)(const char*) = nullptr;
+std::optional<sourcemeta::core::JSON> custom_resolver_wrapper(const std::string &uri) {
+    if (current_custom_resolver != nullptr) {
+        const char* result = current_custom_resolver(uri.c_str());
+        if (result != nullptr) {
+            std::string result_str(result);
+            blaze_free_string((char*)result); 
+            try {
+                return sourcemeta::core::parse_json(result_str);
+            } catch (...) {
+                
+            }
+        }
+    }
+    return sourcemeta::core::schema_official_resolver(uri);
+}
 
 extern "C" {
 
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-int64_t blaze_compile(const char* schema, const char* walker, const char* resolver) {
+char* blaze_alloc_string(size_t size) {
+    return static_cast<char*>(malloc(size));
+}
+
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void blaze_free_string(char* ptr) {
+    free(ptr);
+}
+
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+int64_t blaze_compile(const char* schema, const char* walker, const char* (*custom_resolver)(const char*)) {
     try {
         if (schema == nullptr) {
             std::cerr << "Error: Schema is null" << std::endl;
@@ -32,7 +77,41 @@ int64_t blaze_compile(const char* schema, const char* walker, const char* resolv
 
             std::cerr << "Setting up walker and resolver" << std::endl;
             auto walker_obj = sourcemeta::core::schema_official_walker;
-            auto resolver_obj = sourcemeta::core::schema_official_resolver;
+            
+            
+            current_custom_resolver = custom_resolver;
+            
+           
+            auto resolver_obj = [](std::string_view uri_sv) -> std::optional<sourcemeta::core::JSON> {
+                if (current_custom_resolver != nullptr) {
+                    std::string uri_for_java(uri_sv); 
+                    std::cerr << "Attempting to resolve URI (via Java): " << uri_for_java << std::endl;
+                    
+                   
+                    const char* java_result_c_str = current_custom_resolver(uri_for_java.c_str());
+                    
+                    if (java_result_c_str != nullptr) {
+                        std::string java_result_str(java_result_c_str); 
+                        std::cerr << "Got result from Java resolver (first 100 chars): " << java_result_str.substr(0, 100) << std::endl;
+                        blaze_free_string((char*)java_result_c_str); 
+                        
+                        try {
+                            return sourcemeta::core::parse_json(java_result_str);
+                        } catch (const std::exception& e) {
+                            std::cerr << "Error parsing JSON from Java resolver: " << e.what() << std::endl;
+                            
+                        }
+                    } else {
+                        std::cerr << "Java resolver returned NULL for URI: " << uri_for_java << std::endl;
+                        // Fall through to standard resolver
+                    }
+                } else {
+                    std::cerr << "No custom resolver set, using standard resolver for URI: " << std::string(uri_sv) << std::endl;
+                }
+                
+                // Fall back to the standard resolver if Java fails or returns NULL
+                return sourcemeta::core::schema_official_resolver(uri_sv);
+            };
 
             std::cerr << "Creating compiler instance" << std::endl;
             auto compiler = sourcemeta::blaze::default_schema_compiler;
@@ -47,27 +126,30 @@ int64_t blaze_compile(const char* schema, const char* walker, const char* resolv
             );
             std::cerr << "Schema compiled successfully" << std::endl;
 
+            // Reset the custom resolver
+            current_custom_resolver = nullptr;
+
             auto* template_ptr = new sourcemeta::blaze::Template(compiled);
             std::cerr << "Created persistent Template object at address: " << (void*)template_ptr << std::endl;
             
             // Return the pointer as a long integer
             return reinterpret_cast<int64_t>(template_ptr);
         } catch (const std::exception& internal_e) {
+            current_custom_resolver = nullptr; // Clean up on error
             std::cerr << "Internal error during compilation: " << internal_e.what() << std::endl;
             throw; 
         }
     } catch (const std::exception& e) {
-        
+        current_custom_resolver = nullptr; // Clean up on error
         std::string error_msg = std::string("Error: ") + e.what();
         std::cerr << "Compilation error: " << error_msg << std::endl;
         return 0; 
     } catch (...) {
-        // Handle unknown exceptions
+        current_custom_resolver = nullptr; // Clean up on error
         std::cerr << "Unknown error during compilation" << std::endl;
         return 0; 
     }
 }
-
 
 #ifdef _WIN32
 __declspec(dllexport)
