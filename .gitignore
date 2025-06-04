@@ -30,6 +30,7 @@ Thumbs.db
 
 .gitmodules
 
+.vs
 *.log
 # Ignore test resources
 src/test/resources/

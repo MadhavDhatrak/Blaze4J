@@ -23,21 +23,6 @@ void blaze_free_string(char* ptr);
 
 
 thread_local const char* (*current_custom_resolver)(const char*) = nullptr;
-std::optional<sourcemeta::core::JSON> custom_resolver_wrapper(const std::string &uri) {
-    if (current_custom_resolver != nullptr) {
-        const char* result = current_custom_resolver(uri.c_str());
-        if (result != nullptr) {
-            std::string result_str(result);
-            blaze_free_string((char*)result); 
-            try {
-                return sourcemeta::core::parse_json(result_str);
-            } catch (...) {
-                
-            }
-        }
-    }
-    return sourcemeta::core::schema_official_resolver(uri);
-}
 
 extern "C" {
 
@@ -78,45 +63,58 @@ int64_t blaze_compile(const char* schema, const char* walker, const char* (*cust
             std::cerr << "Setting up walker and resolver" << std::endl;
             auto walker_obj = sourcemeta::core::schema_official_walker;
             
-            
             current_custom_resolver = custom_resolver;
             
            
             auto resolver_obj = [](std::string_view uri_sv) -> std::optional<sourcemeta::core::JSON> {
-                if (current_custom_resolver != nullptr) {
-                    std::string uri_for_java(uri_sv); 
-                    std::cerr << "Attempting to resolve URI (via Java): " << uri_for_java << std::endl;
+                std::string uri(uri_sv);
+                std::cerr << "[DEBUG blaze_wrapper] Resolver: Attempting to resolve URI: " << uri << std::endl;
+                
+                // First try built-in official resolver
+                auto official_result = sourcemeta::core::schema_official_resolver(uri_sv);
+                if (official_result.has_value()) {
+                    std::cerr << "[DEBUG blaze_wrapper] Resolver: Found in built-in resolver for URI: " << uri << std::endl;
                     
-                   
-                    const char* java_result_c_str = current_custom_resolver(uri_for_java.c_str());
-                    
-                    if (java_result_c_str != nullptr) {
-                        std::string java_result_str(java_result_c_str); 
-                        std::cerr << "Got result from Java resolver (first 100 chars): " << java_result_str.substr(0, 100) << std::endl;
-                        blaze_free_string((char*)java_result_c_str); 
-                        
-                        try {
-                            return sourcemeta::core::parse_json(java_result_str);
-                        } catch (const std::exception& e) {
-                            std::cerr << "Error parsing JSON from Java resolver: " << e.what() << std::endl;
-                            
-                        }
-                    } else {
-                        std::cerr << "Java resolver returned NULL for URI: " << uri_for_java << std::endl;
-                        // Fall through to standard resolver
-                    }
-                } else {
-                    std::cerr << "No custom resolver set, using standard resolver for URI: " << std::string(uri_sv) << std::endl;
+                    return official_result;
                 }
                 
-                // Fall back to the standard resolver if Java fails or returns NULL
-                return sourcemeta::core::schema_official_resolver(uri_sv);
+                std::cerr << "[DEBUG blaze_wrapper] Resolver: Not found in built-in resolver for URI: " << uri << std::endl;
+                
+                // Then try custom resolver (Java) if available
+                if (current_custom_resolver != nullptr) {
+                    std::cerr << "[DEBUG blaze_wrapper] Resolver: Attempting custom resolver for URI: " << uri << std::endl;
+                    const char* result_c_str = current_custom_resolver(uri.c_str());
+                    
+                    if (result_c_str != nullptr) {
+                        std::string result_str(result_c_str);
+                        // DO NOT free result_c_str here; keeping the memory alive until after compilation to avoid invalid memory access
+                        // blaze_free_string((char*)result_c_str);
+                        
+                        try {
+                            std::cerr << "[DEBUG blaze_wrapper] Resolver: Successfully retrieved schema string from custom resolver for URI: " << uri << ". Schema (first 100 chars): " << result_str.substr(0, 100) << (result_str.length() > 100 ? "..." : "") << std::endl;
+                            auto parsed_json = sourcemeta::core::parse_json(result_str);
+                            std::cerr << "[DEBUG blaze_wrapper] Resolver: Returning successfully parsed custom schema for URI: " << uri << std::endl;
+                            return parsed_json;
+                        } catch (const std::exception& e) {
+                            std::cerr << "[ERROR blaze_wrapper] Resolver: Error parsing JSON from custom resolver for URI: " << uri << " - " << e.what() << std::endl;
+                            // DO NOT free result_c_str here; keeping the memory alive until after compilation to avoid invalid memory access
+                            // blaze_free_string((char*)result_c_str);
+                        }
+                    } else {
+                        std::cerr << "[DEBUG blaze_wrapper] Resolver: Custom resolver returned NULL for URI: " << uri << std::endl;
+                    }
+                }
+                
+                std::cerr << "[DEBUG blaze_wrapper] Resolver: Returning nullopt (no schema found) for URI: " << uri << std::endl;
+                return std::nullopt;
             };
 
             std::cerr << "Creating compiler instance" << std::endl;
             auto compiler = sourcemeta::blaze::default_schema_compiler;
 
-            std::cerr << "Compiling schema" << std::endl;
+            std::cerr << "[DEBUG blaze_wrapper] Attempting to compile main schema. Schema (first 200 chars): " << schema_str.substr(0, 200) << (schema_str.length() > 200 ? "..." : "") << std::endl;
+            // Potentially log info about json_schema if API allows, e.g., json_schema.type_name()
+            std::cerr << "[DEBUG blaze_wrapper] Calling sourcemeta::blaze::compile..." << std::endl;
             auto compiled = sourcemeta::blaze::compile(
                 json_schema,
                 walker_obj,
@@ -124,6 +122,7 @@ int64_t blaze_compile(const char* schema, const char* walker, const char* (*cust
                 compiler,
                 sourcemeta::blaze::Mode::FastValidation
             );
+            std::cerr << "[DEBUG blaze_wrapper] sourcemeta::blaze::compile finished successfully." << std::endl;
             std::cerr << "Schema compiled successfully" << std::endl;
 
             // Reset the custom resolver

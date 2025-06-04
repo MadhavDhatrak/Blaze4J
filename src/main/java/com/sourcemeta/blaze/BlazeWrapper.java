@@ -178,7 +178,7 @@ public class BlazeWrapper {
                         System.out.println("Fetched schema (length: " + schemaJson.length() + ")");
                         
                         try {
-                           
+                            // Allocate memory for C string (null-terminated) using DLL's allocator
                             long size = schemaJson.length() + 1;
                             MemorySegment cStringPtr = (MemorySegment) blazeAllocStringHandle.invokeExact(size);
 
@@ -222,13 +222,14 @@ public class BlazeWrapper {
             HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(3))
                 .build();
-            
+                
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .timeout(Duration.ofSeconds(3))
                 .build();
             
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            
             if (response.statusCode() == 200) {
                 return response.body();
             } else {
