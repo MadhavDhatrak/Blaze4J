@@ -11,6 +11,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Optional;
 import java.nio.charset.StandardCharsets;
+import java.io.InputStream;
+import java.io.IOException;
 
 public class BlazeWrapper {
     private static final Linker linker = Linker.nativeLinker();
@@ -21,6 +23,9 @@ public class BlazeWrapper {
     private static final MethodHandle blazeAllocStringHandle;
     private static final MethodHandle blazeFreeStringHandle;
     private static final MemorySegment resolverUpcallStub;
+
+    // Track the dialect from the root schema
+    private static String rootSchemaDialect = null;
 
     static {
         try {
@@ -124,6 +129,26 @@ public class BlazeWrapper {
         System.out.println("Using dummy free");
     }
 
+    private static String readClasspathResource(String resourcePath) {
+        // Remove leading slashes for classloader compatibility
+        String normalizedPath = resourcePath.replaceFirst("^/+", "");
+        
+        try (InputStream inputStream = BlazeWrapper.class.getClassLoader()
+                .getResourceAsStream(normalizedPath)) {
+            
+            if (inputStream == null) {
+                System.err.println("Classpath resource not found: " + normalizedPath);
+                return null;
+            }
+            
+            String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            return content;
+        } catch (IOException e) {
+            System.err.println("Error reading classpath resource: " + e.getMessage());
+            return null;
+        }
+    }
+
     private static MemorySegment customResolver(MemorySegment uriPtrSegment) {
         try {
             // Check if segment is null or NULL
@@ -171,41 +196,23 @@ public class BlazeWrapper {
                     return MemorySegment.NULL;
                 }
                 
-                // Handle HTTP URIs
-                if (uri != null && (uri.startsWith("http://") || uri.startsWith("https://"))) {
-                    String schemaJson = fetchRemoteSchema(uri);
-                    if (schemaJson != null) {
-                        System.out.println("Fetched schema (length: " + schemaJson.length() + ")");
-                        
-                        try {
-                            // Allocate memory for C string (null-terminated) using DLL's allocator
-                            long size = schemaJson.length() + 1;
-                            MemorySegment cStringPtr = (MemorySegment) blazeAllocStringHandle.invokeExact(size);
-
-                            if (cStringPtr == null || cStringPtr.equals(MemorySegment.NULL) || cStringPtr.address() == 0) {
-                                System.err.println("Error: blaze_alloc_string failed to allocate memory for schema string.");
-                                return MemorySegment.NULL;
-                            }
-                            
-                            // Reinterpret the pointer with the correct size
-                            MemorySegment cString = cStringPtr.reinterpret(size);
-                            
-                            // Convert to bytes and ensure null termination
-                            byte[] schemaBytes = schemaJson.getBytes(StandardCharsets.UTF_8);
-                            MemorySegment byteSeg = MemorySegment.ofArray(schemaBytes);
-                            cString.copyFrom(byteSeg);
-                            cString.set(ValueLayout.JAVA_BYTE, schemaBytes.length, (byte) 0); // Explicit null terminator
-                            
-                            return cStringPtr; // Return the original pointer segment as expected by C
-                        } catch (Throwable e) {
-                            System.err.println("Error allocating memory: " + e.getMessage());
-                            e.printStackTrace();
-                        }
-                    } else {
-                        System.err.println("Failed to fetch schema for URI: " + uri);
+                // Handle different URI schemes
+                if (uri != null) {
+                    if (uri.startsWith("http://") || uri.startsWith("https://")) {
+                        // Existing HTTP handling
+                        String schemaJson = fetchRemoteSchema(uri);
+                        return processSchemaJson(schemaJson);
                     }
-                } else {
-                    System.err.println("URI does not start with http:// or https:// - " + uri);
+                    else if (uri.startsWith("classpath://")) {
+                        // New classpath handling
+                        String resourcePath = uri.substring("classpath://".length());
+                        System.out.println("Resolving classpath resource: " + resourcePath);
+                        String schemaJson = readClasspathResource(resourcePath);
+                        return processSchemaJson(schemaJson);
+                    }
+                    else {
+                        System.err.println("Unsupported URI scheme: " + uri);
+                    }
                 }
             }
             
@@ -213,6 +220,42 @@ public class BlazeWrapper {
         } catch (Throwable t) {
             System.err.println("Unhandled exception in customResolver: " + t.getMessage());
             t.printStackTrace();
+            return MemorySegment.NULL;
+        }
+    }
+
+    private static MemorySegment processSchemaJson(String schemaJson) {
+        if (schemaJson == null) return MemorySegment.NULL;
+        if (!schemaJson.contains("\"$schema\"") && rootSchemaDialect != null) {
+            int braceIndex = schemaJson.indexOf('{');
+            if (braceIndex >= 0) {
+                StringBuilder sb = new StringBuilder(schemaJson.length() + 80);
+                sb.append(schemaJson, 0, braceIndex + 1)  // up to and including the open brace
+                  .append("\n  \"$schema\": \"").append(rootSchemaDialect).append("\",")
+                  .append(schemaJson.substring(braceIndex + 1));
+                schemaJson = sb.toString();
+                System.out.println("Injected root schema dialect into referenced schema");
+            }
+        }
+        
+        try {
+            long size = schemaJson.length() + 1;
+            MemorySegment cStringPtr = (MemorySegment) blazeAllocStringHandle.invokeExact(size);
+            
+            if (cStringPtr == null || cStringPtr.equals(MemorySegment.NULL) || cStringPtr.address() == 0) {
+                System.err.println("Memory allocation failed for schema string");
+                return MemorySegment.NULL;
+            }
+            
+            MemorySegment cString = cStringPtr.reinterpret(size);
+            byte[] schemaBytes = schemaJson.getBytes(StandardCharsets.UTF_8);
+            cString.copyFrom(MemorySegment.ofArray(schemaBytes));
+            cString.set(ValueLayout.JAVA_BYTE, schemaBytes.length, (byte) 0);
+            
+            return cStringPtr;
+        } catch (Throwable e) {
+            System.err.println("Error processing schema: " + e.getMessage());
+            e.printStackTrace();
             return MemorySegment.NULL;
         }
     }
@@ -254,6 +297,9 @@ public class BlazeWrapper {
     public static CompiledSchema compileSchema(String schema, Arena arena) {
         String walker = "{}";
         try {
+            // Extract the schema dialect from the root schema to use for referenced schemas
+            extractRootDialect(schema);
+            
             MemorySegment schemaSeg = arena.allocateUtf8String(schema);
             MemorySegment walkerSeg = arena.allocateUtf8String(walker);
 
@@ -296,6 +342,23 @@ public class BlazeWrapper {
             blazeFreeTemplateHandle.invoke(schemaHandle);
         } catch (Throwable e) {
             System.err.println("Warning: Failed to free native template memory: " + e.getMessage());
+        }
+    }
+
+    // Helper method to extract root schema dialect
+    private static void extractRootDialect(String schema) {
+        try {
+            if (schema.contains("\"$schema\"")) {
+                int schemaStart = schema.indexOf("\"$schema\"");
+                int valueStart = schema.indexOf("\"", schemaStart + 9) + 1;
+                int valueEnd = schema.indexOf("\"", valueStart);
+                if (valueStart > 0 && valueEnd > 0) {
+                    rootSchemaDialect = schema.substring(valueStart, valueEnd);
+                    System.out.println("Root schema dialect: " + rootSchemaDialect);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error extracting root schema dialect: " + e.getMessage());
         }
     }
 
