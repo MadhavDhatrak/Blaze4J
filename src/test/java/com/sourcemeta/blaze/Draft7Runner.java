@@ -150,32 +150,9 @@ public class Draft7Runner {
                 }
             }
             
-            // Special handling for specific schema files
             if (!found) {
-                if (path.equals("/integer.json")) {
-                    String response = "{\"$schema\": \"http://json-schema.org/draft-07/schema#\", \"type\": \"integer\"}";
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(200, response.length());
-                    exchange.getResponseBody().write(response.getBytes());
-                } else if (path.equals("/locationIndependentIdentifier.json")) {
-                    String response = "{\"$schema\": \"http://json-schema.org/draft-07/schema#\", \"$id\": \"https://example.com/locationIndependentIdentifier.json\", \"type\": \"string\"}";
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(200, response.length());
-                    exchange.getResponseBody().write(response.getBytes());
-                } else if (path.equals("/string.json")) {
-                    String response = "{\"$schema\": \"http://json-schema.org/draft-07/schema#\", \"type\": \"string\"}";
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(200, response.length());
-                    exchange.getResponseBody().write(response.getBytes());
-                } else if (path.equals("/subSchemas.json")) {
-                    String response = "{\"$schema\": \"http://json-schema.org/draft-07/schema#\", \"integer\": {\"type\": \"integer\"}, \"string\": {\"type\": \"string\"}}";
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(200, response.length());
-                    exchange.getResponseBody().write(response.getBytes());
-                } else {
-                    System.err.println("Schema not found: " + path);
-                    exchange.sendResponseHeaders(404, -1);
-                }
+                System.err.println("Schema not found: " + path);
+                exchange.sendResponseHeaders(404, -1);
             }
             
             exchange.close();
