@@ -50,52 +50,53 @@ public class Draft2020Runner {
     private final AtomicInteger skippedTests = new AtomicInteger(0);
     
     private static final List<String> TEST_FILES = Arrays.asList(
-        "ref.json",
-        "refRemote.json",
-        "unevaluatedItems.json",
-        "unevaluatedProperties.json",
-        "uniqueItems.json",
-        "vocabulary.json",
-        "dynamicRef.json",
-        "additionalProperties.json",
-        "allOf.json",
-        "anchor.json",
-        "anyOf.json",
-        "boolean.json",
-        "const.json",
-        "contains.json",
-        "content.json",
-        "default.json",
-        "defs.json",
-        "dependentRequired.json",
-        "dependentSchemas.json",
-        "enum.json",
-        "exclusiveMaximum.json",
-        "exclusiveMinimum.json",
-        "format.json",
-        "if-then-else.json",
-        "infinite-loop-detection.json",
-        "items.json",
-        "maxContains.json",
-        "maximum.json",
-        "maxItems.json",
-        "maxLength.json",
-        "maxProperties.json",
-        "minContains.json",
-        "minimum.json",
-        "minItems.json",
-        "minLength.json",
-        "minProperties.json",
-        "multipleOf.json",
-        "not.json",
-        "oneOf.json",
-        "pattern.json",
-        "patternProperties.json",
-        "prefixItems.json",
-        "properties.json",
-        "propertyNames.json",
-        "required.json",
-        "type.json"  
+    "ref.json",
+    "refRemote.json",
+    "unevaluatedItems.json",
+    "unevaluatedProperties.json",
+    "uniqueItems.json",
+    "vocabulary.json",
+    "dynamicRef.json",
+    "additionalProperties.json",
+    "allOf.json",
+    "anchor.json",
+    "anyOf.json",
+    "boolean.json",
+    "const.json",
+    "contains.json",
+    "content.json",
+    "default.json",
+    "defs.json",
+    "dependentRequired.json",
+    "dependentSchemas.json",
+    "enum.json",
+    "exclusiveMaximum.json",
+    "exclusiveMinimum.json",
+    "format.json",
+    "if-then-else.json",
+    "infinite-loop-detection.json",
+    "items.json",
+    "maxContains.json",
+    "maximum.json",
+    "maxItems.json",
+    "maxLength.json",
+    "maxProperties.json",
+    "minContains.json",
+    "minimum.json",
+    "minItems.json",
+    "minLength.json",
+    "minProperties.json",
+    "multipleOf.json",
+    "not.json",
+    "oneOf.json",
+    "pattern.json",
+    "patternProperties.json",
+    "prefixItems.json",
+    "properties.json",
+    "propertyNames.json",
+    "required.json",
+    "type.json"  
+       
     );
     
     @BeforeAll
@@ -144,6 +145,7 @@ public class Draft2020Runner {
                                 ObjectNode modifiedSchema = (ObjectNode) schemaNode;
                                 modifiedSchema.put("$schema", "https://json-schema.org/draft/2020-12/schema");
                                 fileContent = MAPPER.writeValueAsString(modifiedSchema);
+                                System.out.println("Added $schema keyword to remote schema");
                             }
                             
                             exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -159,32 +161,9 @@ public class Draft2020Runner {
                 }
             }
             
-            // Special handling for specific schema files
             if (!found) {
-                if (path.equals("/integer.json")) {
-                    String response = "{\"$schema\": \"https://json-schema.org/draft/2020-12/schema\", \"type\": \"integer\"}";
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(200, response.length());
-                    exchange.getResponseBody().write(response.getBytes());
-                } else if (path.equals("/locationIndependentIdentifier.json")) {
-                    String response = "{\"$schema\": \"https://json-schema.org/draft/2020-12/schema\", \"$id\": \"https://example.com/locationIndependentIdentifier.json\", \"type\": \"string\"}";
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(200, response.length());
-                    exchange.getResponseBody().write(response.getBytes());
-                } else if (path.equals("/string.json")) {
-                    String response = "{\"$schema\": \"https://json-schema.org/draft/2020-12/schema\", \"type\": \"string\"}";
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(200, response.length());
-                    exchange.getResponseBody().write(response.getBytes());
-                } else if (path.equals("/subSchemas.json")) {
-                    String response = "{\"$schema\": \"https://json-schema.org/draft/2020-12/schema\", \"integer\": {\"type\": \"integer\"}, \"string\": {\"type\": \"string\"}}";
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(200, response.length());
-                    exchange.getResponseBody().write(response.getBytes());
-                } else {
-                    System.err.println("Schema not found: " + path);
-                    exchange.sendResponseHeaders(404, -1);
-                }
+                System.err.println("Schema not found: " + path);
+                exchange.sendResponseHeaders(404, -1);
             }
             
             exchange.close();
@@ -256,10 +235,11 @@ public class Draft2020Runner {
                 JsonNode schemaNode;
                 try {
                     schemaNode = MAPPER.readTree(schemaJson);
-                    if (!schemaNode.has("$schema")) {
+                    if (!schemaNode.has("$schema") && schemaNode.isObject()) {
                         ObjectNode modifiedSchema = (ObjectNode) schemaNode;
                         modifiedSchema.put("$schema", "https://json-schema.org/draft/2020-12/schema");
                         schemaJson = MAPPER.writeValueAsString(modifiedSchema);
+                        System.out.println("Added $schema keyword to schema: " + schemaJson);
                     }
                 } catch (JsonProcessingException e) {
                     skippedTests.incrementAndGet();
