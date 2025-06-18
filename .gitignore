@@ -1,6 +1,8 @@
 # Build directories
 build/
 target/
+build-linux/
+build-macos/
 
 # Dependencies
 deps/
@@ -29,6 +31,7 @@ CMakeCache.txt
 Thumbs.db
 
 .gitmodules
+
 
 .vs
 *.log

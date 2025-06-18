@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.nio.charset.StandardCharsets;
 import java.io.InputStream;
 import java.io.IOException;
+import java.io.File;
 
 public class BlazeWrapper {
     private static final Linker linker = Linker.nativeLinker();
@@ -31,8 +32,27 @@ public class BlazeWrapper {
         try {
             System.loadLibrary("blaze_wrapper");
         } catch (UnsatisfiedLinkError e) {
-            String libPath = System.getProperty("user.dir").replace("\\", "/") + 
-                           "/build/bin/Release/blaze_wrapper.dll";
+            String osName = System.getProperty("os.name").toLowerCase();
+            String userDir = System.getProperty("user.dir").replace("\\", "/");
+            String libPath;
+            
+            if (osName.contains("win")) {
+                // Windows path
+                libPath = userDir + "/build/bin/Release/blaze_wrapper.dll";
+            } else if (osName.contains("mac")) {
+                // Mac path
+                libPath = userDir + "/build-mac/bin/blaze_wrapper.dylib";
+            } else {
+                // Linux/WSL path
+                libPath = userDir + "/build-linux/lib/libblaze_wrapper.so";
+                
+                // Check if file exists, if not try alternative location
+                if (!new File(libPath).exists()) {
+                    libPath = userDir + "/build/libblaze_wrapper.so";
+                }
+            }
+            
+            System.out.println("Attempting to load library from: " + libPath);
             System.load(libPath);
         }
 
@@ -117,7 +137,7 @@ public class BlazeWrapper {
     
     // Dummy malloc for testing purposes
     private static MemorySegment dummyMalloc(long size) {
-        // For testing, just use an arena to allocate memory
+        
         MemorySegment segment = Arena.global().allocate(size);
         System.out.println("Using dummy malloc: " + size + " bytes");
         return segment;
@@ -226,7 +246,11 @@ public class BlazeWrapper {
 
     private static MemorySegment processSchemaJson(String schemaJson) {
         if (schemaJson == null) return MemorySegment.NULL;
+        
+        // If the referenced schema doesn't have a $schema property but we have a root dialect,
+        // add the same dialect to make it a valid standalone schema
         if (!schemaJson.contains("\"$schema\"") && rootSchemaDialect != null) {
+            // Find the first open brace and inject the $schema declaration after it
             int braceIndex = schemaJson.indexOf('{');
             if (braceIndex >= 0) {
                 StringBuilder sb = new StringBuilder(schemaJson.length() + 80);
@@ -347,6 +371,7 @@ public class BlazeWrapper {
 
     // Helper method to extract root schema dialect
     private static void extractRootDialect(String schema) {
+        // Extract the $schema URL from the root schema
         try {
             if (schema.contains("\"$schema\"")) {
                 int schemaStart = schema.indexOf("\"$schema\"");

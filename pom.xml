@@ -56,7 +56,7 @@
                 <version>3.3.1</version>
                 <executions>
                     <execution>
-                        <id>copy-native-lib</id>
+                        <id>copy-native-lib-windows</id>
                         <phase>process-test-classes</phase>
                         <goals>
                             <goal>copy-resources</goal>
@@ -65,10 +65,46 @@
                             <outputDirectory>${project.build.directory}/classes</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>${project.basedir}/build/bin/Debug</directory>
+                                    <directory>${project.basedir}/build/bin/Release</directory>
                                     <includes>
                                         <include>*.dll</include>
                                         <include>*.pdb</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-native-lib-linux</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/build-linux/lib</directory>
+                                    <includes>
+                                        <include>*.so</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-native-lib-mac</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/build-mac/bin</directory>
+                                    <includes>
+                                        <include>*.dylib</include>
                                     </includes>
                                 </resource>
                             </resources>
@@ -83,7 +119,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0</version>
                 <configuration>
-                    <argLine>--enable-preview --enable-native-access=ALL-UNNAMED -Djava.library.path=${project.build.directory}/classes;${project.basedir}/build/bin/Debug</argLine>
+                    <argLine>--enable-preview --enable-native-access=ALL-UNNAMED -Djava.library.path=${project.build.directory}/classes${path.separator}${project.basedir}/build/bin/Release${path.separator}${project.basedir}/build-linux/lib${path.separator}${project.basedir}/build-mac/bin</argLine>
+                    <useSystemClassLoader>true</useSystemClassLoader>
                 </configuration>
             </plugin>
         </plugins>
