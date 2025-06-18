@@ -1,0 +1,55 @@
+name: macOS Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Clone dependencies
+      run: |
+        git clone --depth 1 https://github.com/sourcemeta/blaze.git deps/blaze
+        git clone --depth 1 https://github.com/json-schema-org/JSON-Schema-Test-Suite.git src/test/resources/JSON-Schema-Test-Suite
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Set up CMake
+      uses: lukka/get-cmake@latest
+      
+    - name: Configure and build
+      run: |
+        mkdir -p build-mac
+        cd build-mac
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --config Release
+        
+    # Run JSON-Schema test suites per draft
+    - name: Run Draft 2020-12 tests
+      run: mvn test -Dtest=Draft2020Runner
+
+    - name: Run Draft 2019-09 tests
+      run: mvn test -Dtest=Draft2019Runner
+
+    - name: Run Draft 7 tests
+      run: mvn test -Dtest=Draft7Runner
+
+    - name: Run Draft 6 tests
+      run: mvn test -Dtest=Draft6Runner
+
+    - name: Run Draft 4 tests
+      run: mvn test -Dtest=Draft4Runner 
