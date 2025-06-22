@@ -35,7 +35,7 @@ BLAZE_EXPORT void blaze_free_string(char* ptr) {
     free(ptr);
 }
 
-BLAZE_EXPORT int64_t blaze_compile(const char* schema, const char* walker, const char* (*custom_resolver)(const char*)) {
+BLAZE_EXPORT int64_t blaze_compile(const char* schema, const char* walker, const char* (*custom_resolver)(const char*), const char* default_dialect) {
     try {
         if (schema == nullptr) {
             std::cerr << "Error: Schema is null" << std::endl;
@@ -44,6 +44,13 @@ BLAZE_EXPORT int64_t blaze_compile(const char* schema, const char* walker, const
 
         std::cerr << "Received schema: " << schema << std::endl;
         std::string schema_str(schema);
+        
+        // Process default dialect
+        std::optional<std::string> dialect_opt = std::nullopt;
+        if (default_dialect != nullptr && strlen(default_dialect) > 0) {
+            dialect_opt = std::string(default_dialect);
+            std::cerr << "Using default dialect: " << *dialect_opt << std::endl;
+        }
 
         try {
             std::cerr << "Attempting to parse JSON schema" << std::endl;
@@ -97,7 +104,8 @@ BLAZE_EXPORT int64_t blaze_compile(const char* schema, const char* walker, const
                 walker_obj,
                 resolver_obj,
                 compiler,
-                sourcemeta::blaze::Mode::FastValidation
+                sourcemeta::blaze::Mode::FastValidation,
+                dialect_opt
             );
             std::cerr << "[DEBUG blaze_wrapper] Compilation successful." << std::endl;
 

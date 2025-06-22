@@ -25,13 +25,12 @@ public class BlazeWrapper {
     private static final MethodHandle blazeFreeStringHandle;
     private static final MemorySegment resolverUpcallStub;
 
-    // Track the dialect from the root schema
-    private static String rootSchemaDialect = null;
-
     static {
         try {
+            // Try to load the library using its base name first
             System.loadLibrary("blaze_wrapper");
         } catch (UnsatisfiedLinkError e) {
+            // If that fails, try platform-specific paths
             String osName = System.getProperty("os.name").toLowerCase();
             String userDir = System.getProperty("user.dir").replace("\\", "/");
             String libPath;
@@ -78,6 +77,7 @@ public class BlazeWrapper {
         // Setup blaze_compile handle
         FunctionDescriptor compileDesc = FunctionDescriptor.of(
             ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS
@@ -137,7 +137,7 @@ public class BlazeWrapper {
     
     // Dummy malloc for testing purposes
     private static MemorySegment dummyMalloc(long size) {
-        
+        // For testing, just use an arena to allocate memory
         MemorySegment segment = Arena.global().allocate(size);
         System.out.println("Using dummy malloc: " + size + " bytes");
         return segment;
@@ -228,6 +228,8 @@ public class BlazeWrapper {
                         String resourcePath = uri.substring("classpath://".length());
                         System.out.println("Resolving classpath resource: " + resourcePath);
                         String schemaJson = readClasspathResource(resourcePath);
+                        // Normalize JSON before returning
+                        schemaJson = schemaJson.trim().replaceFirst("^\\{\\s+", "{");
                         return processSchemaJson(schemaJson);
                     }
                     else {
@@ -247,22 +249,8 @@ public class BlazeWrapper {
     private static MemorySegment processSchemaJson(String schemaJson) {
         if (schemaJson == null) return MemorySegment.NULL;
         
-        // If the referenced schema doesn't have a $schema property but we have a root dialect,
-        // add the same dialect to make it a valid standalone schema
-        if (!schemaJson.contains("\"$schema\"") && rootSchemaDialect != null) {
-            // Find the first open brace and inject the $schema declaration after it
-            int braceIndex = schemaJson.indexOf('{');
-            if (braceIndex >= 0) {
-                StringBuilder sb = new StringBuilder(schemaJson.length() + 80);
-                sb.append(schemaJson, 0, braceIndex + 1)  // up to and including the open brace
-                  .append("\n  \"$schema\": \"").append(rootSchemaDialect).append("\",")
-                  .append(schemaJson.substring(braceIndex + 1));
-                schemaJson = sb.toString();
-                System.out.println("Injected root schema dialect into referenced schema");
-            }
-        }
-        
         try {
+           
             long size = schemaJson.length() + 1;
             MemorySegment cStringPtr = (MemorySegment) blazeAllocStringHandle.invokeExact(size);
             
@@ -319,20 +307,27 @@ public class BlazeWrapper {
     }
 
     public static CompiledSchema compileSchema(String schema, Arena arena) {
+        return compileSchema(schema, arena, null);
+    }
+
+    public static CompiledSchema compileSchema(String schema, Arena arena, String defaultDialect) {
         String walker = "{}";
         try {
-            // Extract the schema dialect from the root schema to use for referenced schemas
-            extractRootDialect(schema);
-            
             MemorySegment schemaSeg = arena.allocateUtf8String(schema);
             MemorySegment walkerSeg = arena.allocateUtf8String(walker);
+            
+            // Use the provided default dialect or null
+            MemorySegment dialectSeg = defaultDialect != null ? 
+                arena.allocateUtf8String(defaultDialect) : 
+                MemorySegment.NULL;
 
             long schemaHandle;
             try {
                 schemaHandle = (long) blazeCompileHandle.invoke(
                     schemaSeg,
                     walkerSeg,
-                    resolverUpcallStub
+                    resolverUpcallStub,
+                    dialectSeg
                 );
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to invoke native compile function", e);
@@ -366,24 +361,6 @@ public class BlazeWrapper {
             blazeFreeTemplateHandle.invoke(schemaHandle);
         } catch (Throwable e) {
             System.err.println("Warning: Failed to free native template memory: " + e.getMessage());
-        }
-    }
-
-    // Helper method to extract root schema dialect
-    private static void extractRootDialect(String schema) {
-        // Extract the $schema URL from the root schema
-        try {
-            if (schema.contains("\"$schema\"")) {
-                int schemaStart = schema.indexOf("\"$schema\"");
-                int valueStart = schema.indexOf("\"", schemaStart + 9) + 1;
-                int valueEnd = schema.indexOf("\"", valueStart);
-                if (valueStart > 0 && valueEnd > 0) {
-                    rootSchemaDialect = schema.substring(valueStart, valueEnd);
-                    System.out.println("Root schema dialect: " + rootSchemaDialect);
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error extracting root schema dialect: " + e.getMessage());
         }
     }
 

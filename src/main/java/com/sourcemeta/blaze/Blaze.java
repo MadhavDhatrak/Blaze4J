@@ -16,4 +16,16 @@ public class Blaze {
     public static CompiledSchema compile(String schema, Arena arena) {
         return BlazeWrapper.compileSchema(schema, arena);
     }
+    
+    /**
+     * Compiles a JSON schema with an explicit default dialect
+     * 
+     * @param schema JSON schema to compile
+     * @param arena Memory arena for resource management
+     * @param defaultDialect Default dialect to use if the schema doesn't specify one
+     * @return A compiled schema
+     */
+    public static CompiledSchema compile(String schema, Arena arena, String defaultDialect) {
+        return BlazeWrapper.compileSchema(schema, arena, defaultDialect);
+    }
 }
