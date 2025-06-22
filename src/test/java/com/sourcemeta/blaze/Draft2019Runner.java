@@ -49,6 +49,9 @@ public class Draft2019Runner {
     private final AtomicInteger failedTests = new AtomicInteger(0);
     private final AtomicInteger skippedTests = new AtomicInteger(0);
     
+    // Default dialect for Draft 2019-09
+    private static final String DEFAULT_DIALECT = "https://json-schema.org/draft/2019-09/schema";
+    
     private static final List<String> TEST_FILES = Arrays.asList(
         "additionalItems.json",
         "additionalProperties.json",
@@ -128,8 +131,8 @@ public class Draft2019Runner {
             List<String> possiblePaths = Arrays.asList(
                 "JSON-Schema-Test-Suite/remotes" + path,
                 "JSON-Schema-Test-Suite/remotes/draft2019-09" + path,
-                "JSON-Schema-Test-Suite/remotes/draft2019-09" + path.replace("/draft2019-09", ""),
-                "JSON-Schema-Test-Suite/remotes/draft7" + path.replace("/draft2019-09", "") // Fall back to draft7 if needed
+                "JSON-Schema-Test-Suite/remotes/draft2019-09" + path.replace("/draft2019-09", "")
+               
             );
             
             boolean found = false;
@@ -138,24 +141,12 @@ public class Draft2019Runner {
                     if (resourceStream != null) {
                         String fileContent = new String(resourceStream.readAllBytes(), StandardCharsets.UTF_8);
                         
-                        // Add $schema keyword if not present
-                        try {
-                            JsonNode schemaNode = MAPPER.readTree(fileContent);
-                            if (!schemaNode.has("$schema") && schemaNode.isObject()) {
-                                ObjectNode modifiedSchema = (ObjectNode) schemaNode;
-                                modifiedSchema.put("$schema", "https://json-schema.org/draft/2019-09/schema");
-                                fileContent = MAPPER.writeValueAsString(modifiedSchema);
-                            }
-                            
-                            exchange.getResponseHeaders().set("Content-Type", "application/json");
-                            byte[] responseBytes = fileContent.getBytes(StandardCharsets.UTF_8);
-                            exchange.sendResponseHeaders(200, responseBytes.length);
-                            exchange.getResponseBody().write(responseBytes);
-                            found = true;
-                            break;
-                        } catch (JsonProcessingException e) {
-                            System.err.println("Failed to process schema JSON: " + e.getMessage());
-                        }
+                        exchange.getResponseHeaders().set("Content-Type", "application/json");
+                        byte[] responseBytes = fileContent.getBytes(StandardCharsets.UTF_8);
+                        exchange.sendResponseHeaders(200, responseBytes.length);
+                        exchange.getResponseBody().write(responseBytes);
+                        found = true;
+                        break;
                     }
                 }
             }
@@ -230,20 +221,6 @@ public class Draft2019Runner {
         try (Arena arena = Arena.ofConfined()) {
             CompiledSchema schema = null;
             try {
-                // Add $schema keyword if not present
-                JsonNode schemaNode;
-                try {
-                    schemaNode = MAPPER.readTree(schemaJson);
-                    if (schemaNode.isObject() && !schemaNode.has("$schema")) {
-                        ObjectNode modifiedSchema = (ObjectNode) schemaNode;
-                        modifiedSchema.put("$schema", "https://json-schema.org/draft/2019-09/schema");
-                        schemaJson = MAPPER.writeValueAsString(modifiedSchema);
-                    }
-                } catch (JsonProcessingException e) {
-                    skippedTests.incrementAndGet();
-                    throw new RuntimeException("Failed to process schema JSON", e);
-                }
-                
                 // Add special handling for boolean schemas
                 if (schemaJson.equals("true") || schemaJson.equals("false")) {
                     boolean schemaValue = Boolean.parseBoolean(schemaJson);
@@ -255,7 +232,8 @@ public class Draft2019Runner {
                     return;
                 }
                 
-                schema = Blaze.compile(schemaJson, arena);
+                // Use default dialect parameter instead of adding $schema keyword
+                schema = Blaze.compile(schemaJson, arena, DEFAULT_DIALECT);
                 
                 final BlazeValidator validator = new BlazeValidator();
                 boolean result = validator.validate(schema, dataJson);
