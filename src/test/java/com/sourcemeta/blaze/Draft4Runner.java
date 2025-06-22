@@ -49,6 +49,9 @@ public class Draft4Runner {
     private final AtomicInteger failedTests = new AtomicInteger(0);
     private final AtomicInteger skippedTests = new AtomicInteger(0);
     
+    // Default dialect for Draft 4
+    private static final String DEFAULT_DIALECT = "http://json-schema.org/draft-04/schema#";
+    
     private static final List<String> TEST_FILES = Arrays.asList(
         "additionalItems.json",
         "additionalProperties.json",
@@ -121,24 +124,12 @@ public class Draft4Runner {
                     if (resourceStream != null) {
                         String fileContent = new String(resourceStream.readAllBytes(), StandardCharsets.UTF_8);
                         
-                        // Add $schema keyword if not present
-                        try {
-                            JsonNode schemaNode = MAPPER.readTree(fileContent);
-                            if (!schemaNode.has("$schema") && schemaNode.isObject()) {
-                                ObjectNode modifiedSchema = (ObjectNode) schemaNode;
-                                modifiedSchema.put("$schema", "http://json-schema.org/draft-04/schema#");
-                                fileContent = MAPPER.writeValueAsString(modifiedSchema);
-                            }
-                            
-                            exchange.getResponseHeaders().set("Content-Type", "application/json");
-                            byte[] responseBytes = fileContent.getBytes(StandardCharsets.UTF_8);
-                            exchange.sendResponseHeaders(200, responseBytes.length);
-                            exchange.getResponseBody().write(responseBytes);
-                            found = true;
-                            break;
-                        } catch (JsonProcessingException e) {
-                            System.err.println("Failed to process schema JSON: " + e.getMessage());
-                        }
+                        exchange.getResponseHeaders().set("Content-Type", "application/json");
+                        byte[] responseBytes = fileContent.getBytes(StandardCharsets.UTF_8);
+                        exchange.sendResponseHeaders(200, responseBytes.length);
+                        exchange.getResponseBody().write(responseBytes);
+                        found = true;
+                        break;
                     }
                 }
             }
@@ -177,13 +168,6 @@ public class Draft4Runner {
                     JsonNode schema = testGroup.get("schema");
                     JsonNode tests = testGroup.get("tests");
                     
-                    // Add $schema keyword if not present
-                    if (schema.isObject() && !schema.has("$schema")) {
-                        ObjectNode modifiedSchema = (ObjectNode) schema;
-                        modifiedSchema.put("$schema", "http://json-schema.org/draft-04/schema#");
-                        schema = modifiedSchema;
-                    }
-                    
                     // Process individual tests in each group
                     for (JsonNode test : tests) {
                         String testDescription = test.get("description").asText();
@@ -220,23 +204,8 @@ public class Draft4Runner {
         try (Arena arena = Arena.ofConfined()) {
             CompiledSchema schema = null;
             try {
-                // Add $schema keyword if not present
-                JsonNode schemaNode;
-                try {
-                    schemaNode = MAPPER.readTree(schemaJson);
-                    if (schemaNode.isObject() && !schemaNode.has("$schema")) {
-                        ObjectNode modifiedSchema = (ObjectNode) schemaNode;
-                        modifiedSchema.put("$schema", "http://json-schema.org/draft-04/schema#");
-                        schemaJson = MAPPER.writeValueAsString(modifiedSchema);
-                    }
-                } catch (JsonProcessingException e) {
-                    skippedTests.incrementAndGet();
-                    System.err.println("Failed to process schema JSON: " + e.getMessage());
-                    System.err.println("Schema that caused error: " + schemaJson);
-                    throw new RuntimeException("Failed to process schema JSON", e);
-                }
-                
-                schema = Blaze.compile(schemaJson, arena);
+                // Use default dialect parameter instead of adding $schema keyword
+                schema = Blaze.compile(schemaJson, arena, DEFAULT_DIALECT);
                 
                 final BlazeValidator validator = new BlazeValidator();
                 boolean result = validator.validate(schema, dataJson);
