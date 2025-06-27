@@ -51,7 +51,6 @@ Create a build directory and compile the project using CMake:
 
 ```bash
 mkdir build
-cd build
 cmake -Bbuild -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ```
