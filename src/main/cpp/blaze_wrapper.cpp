@@ -178,4 +178,63 @@ BLAZE_EXPORT void blaze_free_result(const char* result) {
     }
 }
 
+BLAZE_EXPORT char* blaze_validate_with_output(int64_t schemaHandle, const char* instance) {
+    try {
+        if (instance == nullptr) return nullptr;
+        if (schemaHandle == 0) return nullptr;
+
+        std::string instance_str(instance);
+        auto json_instance = sourcemeta::core::parse_json(instance_str);
+        auto* schema_template = reinterpret_cast<sourcemeta::blaze::Template*>(schemaHandle);
+        
+        sourcemeta::blaze::Evaluator evaluator;
+        sourcemeta::blaze::SimpleOutput output{json_instance};
+        bool valid = evaluator.validate(*schema_template, json_instance, std::ref(output));
+        
+        // Build JSON result
+        std::ostringstream json_ss;
+        json_ss << "{\"valid\":" << (valid ? "true" : "false");
+        if (!valid) {
+            json_ss << ",\"errors\":[";
+            bool first_error = true;
+            for (const auto& entry : output) {
+                if (!first_error) {
+                    json_ss << ",";
+                }
+                first_error = false;
+                std::string instance_loc_str = sourcemeta::core::to_string(entry.instance_location);
+                std::string eval_path_str = sourcemeta::core::to_string(entry.evaluate_path);
+                // Basic escaping for quotes and backslashes
+                auto escape = [](const std::string& s) {
+                    std::string out;
+                    for (char c : s) {
+                        if (c == '"' || c == '\\') out.push_back('\\');
+                        out.push_back(c);
+                    }
+                    return out;
+                };
+                json_ss << "{\"message\":\"" << escape(entry.message)
+                        << "\",\"instance_location\":\"" << escape(instance_loc_str)
+                        << "\",\"evaluate_path\":\"" << escape(eval_path_str) << "\"}";
+            }
+            json_ss << "]";
+        }
+        json_ss << "}";
+        std::string result_str = json_ss.str();
+        char* buffer = new char[result_str.size() + 1];
+        std::strcpy(buffer, result_str.c_str());
+        return buffer;
+    } catch (const std::exception& e) {
+        std::cerr << "Detailed validation error: " << e.what() << std::endl;
+        return nullptr;
+    } catch (...) {
+        std::cerr << "Unknown error during detailed validation" << std::endl;
+        return nullptr;
+    }
+}
+
+BLAZE_EXPORT void blaze_free_json(char* json) {
+    if (json) delete[] json;
+}
+
 } 

@@ -23,6 +23,8 @@ public class BlazeWrapper {
     private static final MethodHandle blazeFreeTemplateHandle;
     private static final MethodHandle blazeAllocStringHandle;
     private static final MethodHandle blazeFreeStringHandle;
+    private static final MethodHandle blazeValidateWithOutputHandle;
+    private static final MethodHandle blazeFreeJsonHandle;
     private static final MemorySegment resolverUpcallStub;
 
     static {
@@ -104,6 +106,32 @@ public class BlazeWrapper {
             );
         } catch (Throwable e) {
             throw new RuntimeException("Failed to initialize blaze_validate handle", e);
+        }
+
+        // Setup blaze_validate_with_output handle
+        FunctionDescriptor validateWithOutputDesc = FunctionDescriptor.of(
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS
+        );
+        try {
+            blazeValidateWithOutputHandle = linker.downcallHandle(
+                symbolLookup.find("blaze_validate_with_output").orElseThrow(),
+                validateWithOutputDesc
+            );
+        } catch (Throwable e) {
+            throw new RuntimeException("Failed to initialize blaze_validate_with_output handle", e);
+        }
+        
+        // Setup blaze_free_json handle
+        FunctionDescriptor freeJsonDesc = FunctionDescriptor.ofVoid(ValueLayout.ADDRESS);
+        try {
+            blazeFreeJsonHandle = linker.downcallHandle(
+                symbolLookup.find("blaze_free_json").orElseThrow(), 
+                freeJsonDesc
+            );
+        } catch (Throwable e) {
+            throw new RuntimeException("Failed to initialize blaze_free_json handle", e);
         }
 
         // Setup blaze_free_template handle
@@ -352,6 +380,30 @@ public class BlazeWrapper {
                 return (boolean) blazeValidateHandle.invoke(schemaHandle, instanceSeg);
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to invoke native validate function", e);
+            }
+        }
+    }
+
+    public static ValidationResult validateInstanceWithDetails(CompiledSchema schema, String instance) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment instanceSeg = arena.allocateUtf8String(instance);
+            long schemaHandle = schema.getHandle();
+
+            try {
+                MemorySegment resultSeg = (MemorySegment) blazeValidateWithOutputHandle.invoke(schemaHandle, instanceSeg);
+                if (resultSeg.equals(MemorySegment.NULL)) {
+                    throw new RuntimeException("Failed to get validation details");
+                }
+                
+                // Convert the C string to Java string
+                String jsonResult = resultSeg.reinterpret(Long.MAX_VALUE).getUtf8String(0);
+                
+                // Free the memory allocated in C++
+                blazeFreeJsonHandle.invoke(resultSeg);
+                
+                return ValidationResult.fromJson(jsonResult);
+            } catch (Throwable e) {
+                throw new RuntimeException("Failed to invoke detailed validation function", e);
             }
         }
     }

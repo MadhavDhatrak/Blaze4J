@@ -28,4 +28,28 @@ public class Blaze {
     public static CompiledSchema compile(String schema, Arena arena, String defaultDialect) {
         return BlazeWrapper.compileSchema(schema, arena, defaultDialect);
     }
+    
+    /**
+     * Validates a JSON instance against a schema
+     * 
+     * @param schema The compiled schema
+     * @param instance The JSON instance to validate
+     * @return true if the instance is valid, false otherwise
+     */
+    public static boolean validate(CompiledSchema schema, String instance) {
+        BlazeValidator validator = new BlazeValidator();
+        return validator.validate(schema, instance);
+    }
+    
+    /**
+     * Validates a JSON instance against a schema with detailed results
+     * 
+     * @param schema The compiled schema
+     * @param instance The JSON instance to validate
+     * @return A ValidationResult containing validation details
+     */
+    public static ValidationResult validateWithDetails(CompiledSchema schema, String instance) {
+        BlazeValidator validator = new BlazeValidator();
+        return validator.validateWithDetails(schema, instance);
+    }
 }
