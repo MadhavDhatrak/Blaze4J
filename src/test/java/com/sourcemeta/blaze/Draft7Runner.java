@@ -208,45 +208,43 @@ public class Draft7Runner {
         System.out.println("Data: " + dataJson);
         System.out.println("Expected valid: " + expectedValid);
         
-        try (Arena arena = Arena.ofConfined()) {
-            CompiledSchema schema = null;
-            try {
-                // Add special handling for boolean schemas
-                if (schemaJson.equals("true") || schemaJson.equals("false")) {
-                    boolean schemaValue = Boolean.parseBoolean(schemaJson);
-                    if (schemaValue == expectedValid) {
-                        passedTests.incrementAndGet();
-                    } else {
-                        failedTests.incrementAndGet();
-                    }
-                    return;
+        CompiledSchema schema = null;
+        try {
+            // Add special handling for boolean schemas
+            if (schemaJson.equals("true") || schemaJson.equals("false")) {
+                boolean schemaValue = Boolean.parseBoolean(schemaJson);
+                if (schemaValue == expectedValid) {
+                    passedTests.incrementAndGet();
+                } else {
+                    failedTests.incrementAndGet();
                 }
-                
-                // Use default dialect parameter instead of adding $schema keyword
-                schema = Blaze.compile(schemaJson, arena, DEFAULT_DIALECT);
-                
-                final BlazeValidator validator = new BlazeValidator();
-                boolean result = validator.validate(schema, dataJson);
-                
-                assertEquals(expectedValid, result, 
-                        groupDescription + " - " + testDescription);
-                passedTests.incrementAndGet();
-            } catch (AssertionError e) {
-                failedTests.incrementAndGet();
-                System.err.println("Test failed: " + groupDescription + " - " + testDescription);
-                System.err.println("Error message: " + e.getMessage());
-                System.err.println("Schema that caused error: " + schemaJson);
-                throw e;
-            } catch (Exception e) {
-                skippedTests.incrementAndGet();
-                System.err.println("Error in test: " + groupDescription + " - " + testDescription);
-                System.err.println("Error message: " + e.getMessage());
-                System.err.println("Schema that caused error: " + schemaJson);
-                throw new RuntimeException("Unexpected error during schema compilation", e);
-            } finally {
-                if (schema != null) {
-                    schema.close();
-                }
+                return;
+            }
+            
+            // Use the new overloaded method without Arena parameter
+            schema = Blaze.compile(schemaJson, DEFAULT_DIALECT);
+            
+            final BlazeValidator validator = new BlazeValidator();
+            boolean result = validator.validate(schema, dataJson);
+            
+            assertEquals(expectedValid, result, 
+                    groupDescription + " - " + testDescription);
+            passedTests.incrementAndGet();
+        } catch (AssertionError e) {
+            failedTests.incrementAndGet();
+            System.err.println("Test failed: " + groupDescription + " - " + testDescription);
+            System.err.println("Error message: " + e.getMessage());
+            System.err.println("Schema that caused error: " + schemaJson);
+            throw e;
+        } catch (Exception e) {
+            skippedTests.incrementAndGet();
+            System.err.println("Error in test: " + groupDescription + " - " + testDescription);
+            System.err.println("Error message: " + e.getMessage());
+            System.err.println("Schema that caused error: " + schemaJson);
+            throw new RuntimeException("Unexpected error during schema compilation", e);
+        } finally {
+            if (schema != null) {
+                schema.close();
             }
         }
     }
