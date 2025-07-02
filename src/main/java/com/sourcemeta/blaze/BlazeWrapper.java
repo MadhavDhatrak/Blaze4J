@@ -15,7 +15,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.io.File;
 
-public class BlazeWrapper {
+class BlazeWrapper {
     private static final Linker linker = Linker.nativeLinker();
     private static final SymbolLookup symbolLookup;
     private static final MethodHandle blazeCompileHandle;
@@ -325,7 +325,7 @@ public class BlazeWrapper {
         }
     }
 
-    public static String compile(String schema, String walker, String resolver) {
+    static String compile(String schema, String walker, String resolver) {
         try (Arena arena = Arena.ofConfined()) {
             CompiledSchema compiledSchema = compileSchema(schema, arena);
             return "Compilation succeeded";
@@ -334,11 +334,11 @@ public class BlazeWrapper {
         }
     }
 
-    public static CompiledSchema compileSchema(String schema, Arena arena) {
+    static CompiledSchema compileSchema(String schema, Arena arena) {
         return compileSchema(schema, arena, null);
     }
 
-    public static CompiledSchema compileSchema(String schema, Arena arena, String defaultDialect) {
+    static CompiledSchema compileSchema(String schema, Arena arena, String defaultDialect) {
         String walker = "{}";
         try {
             MemorySegment schemaSeg = arena.allocateUtf8String(schema);
@@ -371,7 +371,7 @@ public class BlazeWrapper {
         }
     }
 
-    public static boolean validateInstance(CompiledSchema schema, String instance) {
+    static boolean validateInstance(CompiledSchema schema, String instance) {
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment instanceSeg = arena.allocateUtf8String(instance);
             long schemaHandle = schema.getHandle();
@@ -384,7 +384,7 @@ public class BlazeWrapper {
         }
     }
 
-    public static ValidationResult validateInstanceWithDetails(CompiledSchema schema, String instance) {
+    static ValidationResult validateInstanceWithDetails(CompiledSchema schema, String instance) {
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment instanceSeg = arena.allocateUtf8String(instance);
             long schemaHandle = schema.getHandle();
@@ -408,7 +408,7 @@ public class BlazeWrapper {
         }
     }
 
-    public static void freeCompiledSchema(long schemaHandle) {
+    static void freeCompiledSchema(long schemaHandle) {
         try {
             blazeFreeTemplateHandle.invoke(schemaHandle);
         } catch (Throwable e) {

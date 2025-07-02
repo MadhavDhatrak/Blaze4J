@@ -30,6 +30,29 @@ public class Blaze {
     }
     
     /**
+     * Compiles a JSON schema, creating and managing an Arena internally
+     * 
+     * @param schema JSON schema to compile
+     * @return A compiled schema
+     */
+    public static CompiledSchema compile(String schema) {
+        Arena arena = Arena.ofConfined();
+        return BlazeWrapper.compileSchema(schema, arena);
+    }
+    
+    /**
+     * Compiles a JSON schema with an explicit default dialect, creating and managing an Arena internally
+     * 
+     * @param schema JSON schema to compile
+     * @param defaultDialect Default dialect to use if the schema doesn't specify one
+     * @return A compiled schema
+     */
+    public static CompiledSchema compile(String schema, String defaultDialect) {
+        Arena arena = Arena.ofConfined();
+        return BlazeWrapper.compileSchema(schema, arena, defaultDialect);
+    }
+    
+    /**
      * Validates a JSON instance against a schema
      * 
      * @param schema The compiled schema
