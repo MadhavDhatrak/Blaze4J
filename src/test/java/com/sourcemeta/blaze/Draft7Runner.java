@@ -210,17 +210,6 @@ public class Draft7Runner {
         
         CompiledSchema schema = null;
         try {
-            // Add special handling for boolean schemas
-            if (schemaJson.equals("true") || schemaJson.equals("false")) {
-                boolean schemaValue = Boolean.parseBoolean(schemaJson);
-                if (schemaValue == expectedValid) {
-                    passedTests.incrementAndGet();
-                } else {
-                    failedTests.incrementAndGet();
-                }
-                return;
-            }
-            
             // Use the new overloaded method without Arena parameter
             schema = Blaze.compile(schemaJson, DEFAULT_DIALECT);
             
