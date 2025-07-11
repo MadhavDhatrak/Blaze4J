@@ -1,4 +1,4 @@
-package com.sourcemeta.blaze;
+package com.github.madhavdhatrak.blaze4j;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;

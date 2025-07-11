@@ -1,4 +1,4 @@
-package com.sourcemeta.blaze;
+package com.github.madhavdhatrak.blaze4j;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,10 +35,10 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Test runner for JSON Schema Draft 7 test suite
+ * Test runner for JSON Schema Draft 4 test suite
  */
 @TestInstance(Lifecycle.PER_CLASS)
-public class Draft7Runner {
+public class Draft4Runner {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private HttpServer server;
@@ -49,25 +49,19 @@ public class Draft7Runner {
     private final AtomicInteger failedTests = new AtomicInteger(0);
     private final AtomicInteger skippedTests = new AtomicInteger(0);
     
-    // Default dialect for Draft 7
-    private static final String DEFAULT_DIALECT = "http://json-schema.org/draft-07/schema#";
+    // Default dialect for Draft 4
+    private static final String DEFAULT_DIALECT = "http://json-schema.org/draft-04/schema#";
     
     private static final List<String> TEST_FILES = Arrays.asList(
         "additionalItems.json",
         "additionalProperties.json",
         "allOf.json",
         "anyOf.json",
-        "boolean_schema.json",
-        "const.json",
-        "contains.json",
         "default.json",
         "definitions.json",
         "dependencies.json",
         "enum.json",
-        "exclusiveMaximum.json",
-        "exclusiveMinimum.json",
         "format.json",
-        "if-then-else.json",
         "infinite-loop-detection.json",
         "items.json",
         "maximum.json",
@@ -84,7 +78,6 @@ public class Draft7Runner {
         "pattern.json",
         "patternProperties.json",
         "properties.json",
-        "propertyNames.json",
         "ref.json",
         "refRemote.json",
         "required.json",
@@ -98,19 +91,19 @@ public class Draft7Runner {
         server = HttpServer.create(new InetSocketAddress(1234), 0);
         server.createContext("/", new SchemaHandler());
         server.start();
-        System.out.println("Mock server started on port 1234 for Draft 7 tests");
+        System.out.println("Mock server started on port 1234 for Draft 4 tests");
     }
     
     @AfterAll
     public void cleanup() {
         if (server != null) {
             server.stop(0);
-            System.out.println("Mock server stopped for Draft 7 tests");
+            System.out.println("Mock server stopped for Draft 4 tests");
         }
     }
     
     /**
-     * SchemaHandler implementation to serve test schemas for Draft 7
+     * SchemaHandler implementation to serve test schemas for Draft 4
      */
     static class SchemaHandler implements HttpHandler {
         @Override
@@ -121,13 +114,13 @@ public class Draft7Runner {
             // Try to find the schema in resources directory
             List<String> possiblePaths = Arrays.asList(
                 "JSON-Schema-Test-Suite/remotes" + path,
-                "JSON-Schema-Test-Suite/remotes/draft7" + path,
-                "JSON-Schema-Test-Suite/remotes/draft7" + path.replace("/draft7", "")
+                "JSON-Schema-Test-Suite/remotes/draft4" + path,
+                "JSON-Schema-Test-Suite/remotes/draft4" + path.replace("/draft4", "")
             );
             
             boolean found = false;
             for (String possiblePath : possiblePaths) {
-                try (InputStream resourceStream = Draft7Runner.class.getClassLoader().getResourceAsStream(possiblePath)) {
+                try (InputStream resourceStream = Draft4Runner.class.getClassLoader().getResourceAsStream(possiblePath)) {
                     if (resourceStream != null) {
                         String fileContent = new String(resourceStream.readAllBytes(), StandardCharsets.UTF_8);
                         
@@ -157,8 +150,8 @@ public class Draft7Runner {
         List<Arguments> testCases = new ArrayList<>();
         
         for (String fileName : TEST_FILES) {
-            String testSuitePath = "JSON-Schema-Test-Suite/tests/draft7/" + fileName;
-            try (InputStream is = Draft7Runner.class.getClassLoader()
+            String testSuitePath = "JSON-Schema-Test-Suite/tests/draft4/" + fileName;
+            try (InputStream is = Draft4Runner.class.getClassLoader()
                     .getResourceAsStream(testSuitePath)) {
                 
                 if (is == null) {
@@ -199,7 +192,7 @@ public class Draft7Runner {
     
     @ParameterizedTest(name = "{0}: {1}")
     @MethodSource("refRemoteTestCases")
-    @DisplayName("Test cases from JSON Schema Test Suite (Draft 7)")
+    @DisplayName("Test cases from JSON Schema Test Suite (Draft 4)")
     public void testRefRemoteCases(String groupDescription, String testDescription, 
                                  String schemaJson, String dataJson, boolean expectedValid) {
         totalTests.incrementAndGet();

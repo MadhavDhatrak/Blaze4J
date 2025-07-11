@@ -1,4 +1,4 @@
-package com.sourcemeta.blaze;
+package com.github.madhavdhatrak.blaze4j;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;

@@ -1,4 +1,4 @@
-package com.sourcemeta.blaze;
+package com.github.madhavdhatrak.blaze4j;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
