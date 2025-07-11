@@ -1,4 +1,4 @@
-package com.sourcemeta.blaze;
+package com.github.madhavdhatrak.blaze4j;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
@@ -30,7 +30,7 @@ class BlazeWrapper {
     static {
         try {
             // Try to load the library using its base name first
-            System.loadLibrary("blaze_wrapper");
+            System.loadLibrary("blaze4j");
         } catch (UnsatisfiedLinkError e) {
             // If that fails, try platform-specific paths
             String osName = System.getProperty("os.name").toLowerCase();
@@ -39,17 +39,17 @@ class BlazeWrapper {
             
             if (osName.contains("win")) {
                 // Windows path
-                libPath = userDir + "/build/bin/Release/blaze_wrapper.dll";
+                libPath = userDir + "/build/bin/Release/blaze4j.dll";
             } else if (osName.contains("mac")) {
                 // Mac path
-                libPath = userDir + "/build-mac/bin/blaze_wrapper.dylib";
+                libPath = userDir + "/build-mac/bin/blaze4j.dylib";
             } else {
                 // Linux/WSL path
-                libPath = userDir + "/build-linux/lib/libblaze_wrapper.so";
+                libPath = userDir + "/build-linux/lib/libblaze4j.so";
                 
                 // Check if file exists, if not try alternative location
                 if (!new File(libPath).exists()) {
-                    libPath = userDir + "/build/libblaze_wrapper.so";
+                    libPath = userDir + "/build/libblaze4j.so";
                 }
             }
             

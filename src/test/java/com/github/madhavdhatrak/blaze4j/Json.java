@@ -1,4 +1,4 @@
-package com.sourcemeta.blaze;
+package com.github.madhavdhatrak.blaze4j;
 
 import java.io.IOException;
 import com.fasterxml.jackson.databind.JsonNode;

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(blaze_wrapper)
+project(blaze4j)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -27,23 +27,23 @@ endif()
 add_subdirectory("${PROJECT_SOURCE_DIR}/deps/blaze")
 
 # Create the shared library
-add_library(blaze_wrapper SHARED
+add_library(blaze4j SHARED
     src/main/cpp/blaze_wrapper.cpp)
 
 # No need to redefine BLAZE_EXPORT here; the macro is set in the source file with proper platform guards.
 
 # Disable strcpy deprecation warning for MSVC
 if(MSVC)
-    target_compile_definitions(blaze_wrapper PRIVATE _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(blaze4j PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
 
 # Link against blaze libraries
-target_link_libraries(blaze_wrapper
+target_link_libraries(blaze4j
     PUBLIC
     sourcemeta::blaze::compiler
     sourcemeta::blaze::evaluator)
 
 # Include directories
-target_include_directories(blaze_wrapper
+target_include_directories(blaze4j
     PUBLIC
     ${PROJECT_SOURCE_DIR}/src/main/cpp)
