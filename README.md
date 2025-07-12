@@ -1,8 +1,18 @@
-# BlazeWrapper
+# Blaze4J
 
-**BlazeWrapper** is a high-performance Java wrapper for the Blaze JSON Schema validator, providing seamless integration between Java applications and the native C++ Blaze validator. By leveraging Java's Foreign Function & Memory API (FFM), this library offers excellent performance while maintaining memory safety.
+**Blaze4J** is a high-performance Java wrapper for the Blaze JSON Schema validator, providing seamless integration between Java applications and the native C++ Blaze validator. By leveraging Java's Foreign Function & Memory API (FFM), this library offers excellent performance while maintaining memory safety.
 
-BlazeWrapper enables Java developers to validate JSON documents against JSON Schema specifications (supporting multiple draft versions) with minimal overhead and maximum efficiency.
+Blaze4J enables Java developers to validate JSON documents against JSON Schema specifications (supporting multiple draft versions) with minimal overhead and maximum efficiency.
+
+
+---
+
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/d9e6d732-467e-4bd2-92ef-20f39baf65cb" width="516" height="346" alt="image" />
+</p>
+
+
 
 ---
 
@@ -32,7 +42,7 @@ BlazeWrapper enables Java developers to validate JSON documents against JSON Sch
 
 ## Overview
 
-BlazeWrapper bridges Java and native C++ for **fast, standards-compliant JSON Schema validation**. It supports multiple schema drafts, efficient memory management via the FFM API, and robust error reporting.
+Blaze4J bridges Java and native C++ for **fast, standards-compliant JSON Schema validation**. It supports multiple schema drafts, efficient memory management via the FFM API, and robust error reporting.
 
 ---
 
@@ -211,4 +221,3 @@ Feel free to open an issue for bugs or feature requests, or submit a pull reques
 
 - [Blaze](https://github.com/sourcemeta/blaze) — Native JSON Schema validator
 - [JSON Schema Test Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite)
-
