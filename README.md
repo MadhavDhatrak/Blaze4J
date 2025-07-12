@@ -6,13 +6,9 @@ Blaze4J enables Java developers to validate JSON documents against JSON Schema s
 
 
 ---
-
-
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/d9e6d732-467e-4bd2-92ef-20f39baf65cb" width="516" height="346" alt="image" />
+  <img src="https://github.com/user-attachments/assets/5b1f7e38-4614-446e-985c-6ad2cc135ff3" width="516" height="346" alt="Image 2" />
 </p>
-
-
 
 ---
 
