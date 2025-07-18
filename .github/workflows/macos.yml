@@ -54,7 +54,7 @@ jobs:
       run: mvn test -Dtest=Draft4Runner
 
     - name: Upload macOS native library
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: libblaze4j-macos
         path: build-mac/libblaze4j.dylib
