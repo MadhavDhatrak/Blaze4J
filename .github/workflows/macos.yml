@@ -30,15 +30,14 @@ jobs:
 
     - name: Set up CMake
       uses: lukka/get-cmake@latest
-      
+
     - name: Configure and build
       run: |
         mkdir -p build-mac
         cd build-mac
         cmake .. -DCMAKE_BUILD_TYPE=Release
         cmake --build . --config Release
-        
-    # Run JSON-Schema test suites per draft
+
     - name: Run Draft 2020-12 tests
       run: mvn test -Dtest=Draft2020Runner
 
@@ -52,4 +51,10 @@ jobs:
       run: mvn test -Dtest=Draft6Runner
 
     - name: Run Draft 4 tests
-      run: mvn test -Dtest=Draft4Runner 
+      run: mvn test -Dtest=Draft4Runner
+
+    - name: Upload macOS native library
+      uses: actions/upload-artifact@v3
+      with:
+        name: libblaze4j-macos
+        path: build-mac/libblaze4j.dylib
