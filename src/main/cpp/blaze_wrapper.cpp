@@ -42,63 +42,47 @@ BLAZE_EXPORT int64_t blaze_compile(const char* schema, const char* walker, const
             throw std::runtime_error("Schema is null");
         }
 
-        std::cerr << "Received schema: " << schema << std::endl;
         std::string schema_str(schema);
         
         // Process default dialect
         std::optional<std::string> dialect_opt = std::nullopt;
         if (default_dialect != nullptr && strlen(default_dialect) > 0) {
             dialect_opt = std::string(default_dialect);
-            std::cerr << "Using default dialect: " << *dialect_opt << std::endl;
         }
 
         try {
-            std::cerr << "Attempting to parse JSON schema" << std::endl;
             auto json_schema = sourcemeta::core::parse_json(schema_str);
-            std::cerr << "Successfully parsed JSON schema" << std::endl;
 
             auto walker_obj = sourcemeta::core::schema_official_walker;
             current_custom_resolver = custom_resolver;
 
             auto resolver_obj = [](std::string_view uri_sv) -> std::optional<sourcemeta::core::JSON> {
                 std::string uri(uri_sv);
-                std::cerr << "[DEBUG blaze4j] Resolver: Attempting to resolve URI: " << uri << std::endl;
 
                 auto official_result = sourcemeta::core::schema_official_resolver(uri_sv);
                 if (official_result.has_value()) {
-                    std::cerr << "[DEBUG blaze4j] Resolver: Found in built-in resolver for URI: " << uri << std::endl;
                     return official_result;
                 }
 
-                std::cerr << "[DEBUG blaze4j] Resolver: Not found in built-in resolver for URI: " << uri << std::endl;
-
                 if (current_custom_resolver != nullptr) {
-                    std::cerr << "[DEBUG blaze4j] Resolver: Attempting custom resolver for URI: " << uri << std::endl;
                     const char* result_c_str = current_custom_resolver(uri.c_str());
 
                     if (result_c_str != nullptr) {
                         std::string result_str(result_c_str);
                         try {
-                            std::cerr << "[DEBUG blaze4j] Resolver: Retrieved custom schema (first 100 chars): " 
-                                      << result_str.substr(0, 100) << (result_str.length() > 100 ? "..." : "") << std::endl;
                             auto parsed_json = sourcemeta::core::parse_json(result_str);
                             return parsed_json;
                         } catch (const std::exception& e) {
-                            std::cerr << "[ERROR blaze4j] Error parsing JSON from custom resolver: " << e.what() << std::endl;
+                            std::cerr << "Error parsing JSON from custom resolver: " << e.what() << std::endl;
                         }
-                    } else {
-                        std::cerr << "[DEBUG blaze4j] Custom resolver returned NULL for URI: " << uri << std::endl;
                     }
                 }
 
-                std::cerr << "[DEBUG blaze4j] Resolver: Returning nullopt for URI: " << uri << std::endl;
                 return std::nullopt;
             };
 
-            std::cerr << "Creating compiler instance" << std::endl;
             auto compiler = sourcemeta::blaze::default_schema_compiler;
 
-            std::cerr << "[DEBUG blaze4j] Calling sourcemeta::blaze::compile..." << std::endl;
             auto compiled = sourcemeta::blaze::compile(
                 json_schema,
                 walker_obj,
@@ -107,12 +91,10 @@ BLAZE_EXPORT int64_t blaze_compile(const char* schema, const char* walker, const
                 sourcemeta::blaze::Mode::FastValidation,
                 dialect_opt
             );
-            std::cerr << "[DEBUG blaze4j] Compilation successful." << std::endl;
 
             current_custom_resolver = nullptr;
 
             auto* template_ptr = new sourcemeta::blaze::Template(compiled);
-            std::cerr << "Template object created at: " << (void*)template_ptr << std::endl;
             return reinterpret_cast<int64_t>(template_ptr);
         } catch (const std::exception& internal_e) {
             current_custom_resolver = nullptr;
@@ -153,7 +135,6 @@ BLAZE_EXPORT bool blaze_validate(int64_t schemaHandle, const char* instance) {
             return false;
         }
 
-        std::cerr << "Validating instance..." << std::endl;
         return evaluator.validate(*schema_template, json_instance);
     } catch (const std::exception& e) {
         std::cerr << "Validation error: " << e.what() << std::endl;
@@ -167,7 +148,6 @@ BLAZE_EXPORT bool blaze_validate(int64_t schemaHandle, const char* instance) {
 BLAZE_EXPORT void blaze_free_template(int64_t schemaHandle) {
     if (schemaHandle != 0) {
         auto* template_ptr = reinterpret_cast<sourcemeta::blaze::Template*>(schemaHandle);
-        std::cerr << "Freeing Template at: " << (void*)template_ptr << std::endl;
         delete template_ptr;
     }
 }
