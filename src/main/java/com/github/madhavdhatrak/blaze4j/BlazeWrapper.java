@@ -14,8 +14,11 @@ import java.nio.charset.StandardCharsets;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.File;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 class BlazeWrapper {
+    private static final Logger logger = Logger.getLogger(BlazeWrapper.class.getName());
     private static final Linker linker = Linker.nativeLinker();
     private static final SymbolLookup symbolLookup;
     private static final MethodHandle blazeCompileHandle;
@@ -38,22 +41,22 @@ class BlazeWrapper {
             String libPath;
             
             if (osName.contains("win")) {
-                // Windows path
+            
                 libPath = userDir + "/build/bin/Release/blaze4j.dll";
             } else if (osName.contains("mac")) {
-                // Mac path
+                
                 libPath = userDir + "/build-mac/bin/blaze4j.dylib";
             } else {
-                // Linux/WSL path
+                
                 libPath = userDir + "/build-linux/lib/libblaze4j.so";
                 
-                // Check if file exists, if not try alternative location
+                
                 if (!new File(libPath).exists()) {
                     libPath = userDir + "/build/libblaze4j.so";
                 }
             }
             
-            System.out.println("Attempting to load library from: " + libPath);
+            logger.info("Attempting to load library from: " + libPath);
             System.load(libPath);
         }
 
@@ -167,14 +170,14 @@ class BlazeWrapper {
     private static MemorySegment dummyMalloc(long size) {
         // For testing, just use an arena to allocate memory
         MemorySegment segment = Arena.global().allocate(size);
-        System.out.println("Using dummy malloc: " + size + " bytes");
+        logger.fine("Using dummy malloc: " + size + " bytes");
         return segment;
     }
     
     // Dummy free for testing purposes
     private static void dummyFree(MemorySegment segment) {
         // Nothing to do for dummy free
-        System.out.println("Using dummy free");
+        logger.fine("Using dummy free");
     }
 
     private static String readClasspathResource(String resourcePath) {
@@ -185,14 +188,14 @@ class BlazeWrapper {
                 .getResourceAsStream(normalizedPath)) {
             
             if (inputStream == null) {
-                System.err.println("Classpath resource not found: " + normalizedPath);
+                logger.warning("Classpath resource not found: " + normalizedPath);
                 return null;
             }
             
             String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
             return content;
         } catch (IOException e) {
-            System.err.println("Error reading classpath resource: " + e.getMessage());
+            logger.log(Level.WARNING, "Error reading classpath resource", e);
             return null;
         }
     }
@@ -201,31 +204,28 @@ class BlazeWrapper {
         try {
             // Check if segment is null or NULL
             if (uriPtrSegment == null || uriPtrSegment.equals(MemorySegment.NULL)) {
-                System.err.println("Warning: Null URI segment received in customResolver");
+                logger.warning("Null URI segment received in customResolver");
                 return MemorySegment.NULL;
             }
             
-            System.out.println("Received URI segment address: " + uriPtrSegment.address());
+            logger.fine("Received URI segment address: " + uriPtrSegment.address());
             
-            // Create a confined arena for our temporary allocations
             try (Arena arena = Arena.ofConfined()) {
-                // Safely read the null-terminated string from the native memory
                 String uri = null;
                 try {
-                    // Create a safe view of the native memory
                     MemorySegment safeView = uriPtrSegment.reinterpret(Long.MAX_VALUE, arena, null);
                     
                     // Find the null terminator
                     long length = 0;
                     while (safeView.get(ValueLayout.JAVA_BYTE, length) != 0) {
                         length++;
-                        if (length > 2048) { // Reasonable limit for URI length
+                        if (length > 2048) {
                             break;
                         }
                     }
                     
                     if (length == 0) {
-                        System.err.println("Warning: Empty string at " + uriPtrSegment.address());
+                        logger.warning("Empty string at " + uriPtrSegment.address());
                         return MemorySegment.NULL;
                     }
                     
@@ -237,10 +237,9 @@ class BlazeWrapper {
                     
                     // Convert to a Java string
                     uri = new String(bytes, StandardCharsets.UTF_8);
-                    System.out.println("Resolved URI string: " + uri);
+                    logger.fine("Resolved URI string: " + uri);
                 } catch (Exception e) {
-                    System.err.println("Error reading URI string: " + e.getMessage());
-                    e.printStackTrace();
+                    logger.log(Level.SEVERE, "Error reading URI string", e);
                     return MemorySegment.NULL;
                 }
                 
@@ -254,22 +253,21 @@ class BlazeWrapper {
                     else if (uri.startsWith("classpath://")) {
                         // New classpath handling
                         String resourcePath = uri.substring("classpath://".length());
-                        System.out.println("Resolving classpath resource: " + resourcePath);
+                        logger.fine("Resolving classpath resource: " + resourcePath);
                         String schemaJson = readClasspathResource(resourcePath);
                         // Normalize JSON before returning
                         schemaJson = schemaJson.trim().replaceFirst("^\\{\\s+", "{");
                         return processSchemaJson(schemaJson);
                     }
                     else {
-                        System.err.println("Unsupported URI scheme: " + uri);
+                        logger.warning("Unsupported URI scheme: " + uri);
                     }
                 }
             }
             
             return MemorySegment.NULL;
         } catch (Throwable t) {
-            System.err.println("Unhandled exception in customResolver: " + t.getMessage());
-            t.printStackTrace();
+            logger.log(Level.SEVERE, "Unhandled exception in customResolver", t);
             return MemorySegment.NULL;
         }
     }
@@ -283,7 +281,7 @@ class BlazeWrapper {
             MemorySegment cStringPtr = (MemorySegment) blazeAllocStringHandle.invokeExact(size);
             
             if (cStringPtr == null || cStringPtr.equals(MemorySegment.NULL) || cStringPtr.address() == 0) {
-                System.err.println("Memory allocation failed for schema string");
+                logger.severe("Memory allocation failed for schema string");
                 return MemorySegment.NULL;
             }
             
@@ -294,8 +292,7 @@ class BlazeWrapper {
             
             return cStringPtr;
         } catch (Throwable e) {
-            System.err.println("Error processing schema: " + e.getMessage());
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error processing schema", e);
             return MemorySegment.NULL;
         }
     }
@@ -316,11 +313,11 @@ class BlazeWrapper {
             if (response.statusCode() == 200) {
                 return response.body();
             } else {
-                System.err.println("Failed to fetch schema from " + uri + ": HTTP " + response.statusCode());
+                logger.warning("Failed to fetch schema from " + uri + ": HTTP " + response.statusCode());
                 return null;
             }
         } catch (Exception e) {
-            System.err.println("Error fetching schema from " + uri + ": " + e.getMessage());
+            logger.log(Level.WARNING, "Error fetching schema from " + uri, e);
             return null;
         }
     }
@@ -412,7 +409,7 @@ class BlazeWrapper {
         try {
             blazeFreeTemplateHandle.invoke(schemaHandle);
         } catch (Throwable e) {
-            System.err.println("Warning: Failed to free native template memory: " + e.getMessage());
+            logger.log(Level.WARNING, "Failed to free native template memory", e);
         }
     }
 
@@ -443,7 +440,7 @@ class BlazeWrapper {
         @Override
         protected void finalize() throws Throwable {
             if (!closed) {
-                System.err.println("Warning: CompiledSchema was not closed properly.");
+                logger.warning("CompiledSchema was not closed properly.");
                 close();
             }
             super.finalize();
