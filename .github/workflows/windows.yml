@@ -32,6 +32,10 @@ jobs:
     - name: Set up CMake
       uses: lukka/get-cmake@latest
       
+    - name: Create native directories
+      run: |
+        mkdir -p src/main/resources/native/windows-amd64
+
     - name: Configure CMake
       run: cmake -Bbuild -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release
       

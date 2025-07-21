@@ -31,6 +31,10 @@ jobs:
     - name: Set up CMake
       uses: lukka/get-cmake@latest
       
+    - name: Create native directories
+      run: |
+        mkdir -p src/main/resources/native/macos-amd64
+       
     - name: Configure and build
       run: |
         mkdir -p build-mac
