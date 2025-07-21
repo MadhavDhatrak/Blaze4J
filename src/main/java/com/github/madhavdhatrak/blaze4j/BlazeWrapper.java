@@ -29,32 +29,18 @@ class BlazeWrapper {
 
     static {
         try {
-            // Try to load the library using its base name first
+            // Try using standard System.loadLibrary first
             System.loadLibrary("blaze4j");
         } catch (UnsatisfiedLinkError e) {
-            // If that fails, try platform-specific paths
-            String osName = System.getProperty("os.name").toLowerCase();
-            String userDir = System.getProperty("user.dir").replace("\\", "/");
-            String libPath;
-            
-            if (osName.contains("win")) {
-                // Windows path
-                libPath = userDir + "/build/bin/Release/blaze4j.dll";
-            } else if (osName.contains("mac")) {
-                // Mac path
-                libPath = userDir + "/build-mac/bin/blaze4j.dylib";
-            } else {
-                // Linux/WSL path
-                libPath = userDir + "/build-linux/lib/libblaze4j.so";
-                
-                // Check if file exists, if not try alternative location
-                if (!new File(libPath).exists()) {
-                    libPath = userDir + "/build/libblaze4j.so";
-                }
+            // If that fails, try using the NativeLoader to extract from JAR
+            try {
+                NativeLoader.loadLibrary("blaze4j");
+                System.out.println("Loaded native library from JAR");
+            } catch (Exception ex) {
+                System.err.println("FATAL: Failed to load native library: " + ex.getMessage());
+                ex.printStackTrace();
+                throw new RuntimeException("Failed to load native library: " + ex.getMessage(), ex);
             }
-            
-            System.out.println("Attempting to load library from: " + libPath);
-            System.load(libPath);
         }
 
         symbolLookup = SymbolLookup.loaderLookup();

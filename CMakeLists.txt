@@ -6,22 +6,31 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Set Java resources native directory paths
+set(JAVA_RESOURCES_DIR "${CMAKE_SOURCE_DIR}/src/main/resources/native")
+
 # Set platform-specific output directories
 if(WIN32)
-    # Windows: put DLL in build/bin/Release
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/Debug")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/Release")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/Debug")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/Release")
+    # Windows: put DLL in Java resources directory for windows-amd64
+    set(PLATFORM_NATIVE_DIR "${JAVA_RESOURCES_DIR}/windows-amd64")
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PLATFORM_NATIVE_DIR}")
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${PLATFORM_NATIVE_DIR}")
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${PLATFORM_NATIVE_DIR}")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PLATFORM_NATIVE_DIR}")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG "${PLATFORM_NATIVE_DIR}")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${PLATFORM_NATIVE_DIR}")
 elseif(APPLE)
-    # Mac: put dylib in build-mac/bin
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    # Mac: put dylib in Java resources directory for macos-amd64
+    set(PLATFORM_NATIVE_DIR "${JAVA_RESOURCES_DIR}/macos-amd64")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PLATFORM_NATIVE_DIR}")
 else()
-    # Linux: put .so in build-linux/lib
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+    # Linux: put .so in Java resources directory for linux-amd64
+    set(PLATFORM_NATIVE_DIR "${JAVA_RESOURCES_DIR}/linux-amd64")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PLATFORM_NATIVE_DIR}")
 endif()
+
+# Create necessary directories
+file(MAKE_DIRECTORY ${PLATFORM_NATIVE_DIR})
 
 # Add blaze as a submodule
 add_subdirectory("${PROJECT_SOURCE_DIR}/deps/blaze")
@@ -29,8 +38,6 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/deps/blaze")
 # Create the shared library
 add_library(blaze4j SHARED
     src/main/cpp/blaze_wrapper.cpp)
-
-# No need to redefine BLAZE_EXPORT here; the macro is set in the source file with proper platform guards.
 
 # Disable strcpy deprecation warning for MSVC
 if(MSVC)
