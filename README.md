@@ -14,7 +14,6 @@ Blaze4J enables Java developers to validate JSON documents against JSON Schema s
 
 - [Overview](#overview)
 - [Features](#features)
-- [Project Structure](#project-structure)
 - [Installation](./installation.md) 
 - [Usage](#usage) 
 - [Supported Drafts](#supported-drafts) 
@@ -43,32 +42,7 @@ Blaze4J bridges Java and native C++ for **fast, standards-compliant JSON Schema 
 - **Easy integration**: Simple API for compiling schemas and validating instances.
 - **Cross-platform**: Works on Windows, Linux, and macOS.
 
---- 
-## Project Structure
 
-
-```
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── com/sourcemeta/blaze/
-│   │   │       ├── CompiledSchema.java
-│   │   │       ├── BlazeWrapper.java
-│   │   │       ├── BlazeValidator.java
-│   │   │       └── Blaze.java
-│   │   └── cpp/
-│   │       └── blaze_wrapper.cpp
-│   └── test/
-│       └── java/
-│           └── com/sourcemeta/blaze/wrapper/
-│               └── BlazeWrapperTest.java
-├── deps/
-│   └── blaze/          # Git submodule for Blaze library
-├── build/              # Build output directory (contains platform-specific shared libraries)
-├── pom.xml            # Maven build configuration
-└── CMakeLists.txt     # CMake configuration
-
-```
 ---
 
 ## Installation
