@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14
 
     steps:
     - uses: actions/checkout@v3
@@ -56,4 +56,4 @@ jobs:
       run: mvn test -Dtest=Draft6Runner
 
     - name: Run Draft 4 tests
-      run: mvn test -Dtest=Draft4Runner 
+      run: mvn test -Dtest=Draft4Runner
