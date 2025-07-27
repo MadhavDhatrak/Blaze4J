@@ -19,7 +19,6 @@ Blaze4J enables Java developers to validate JSON documents against JSON Schema s
 - [Usage](#usage) 
 - [Supported Drafts](#supported-drafts) 
 - [Supported Resolvers](#supported-resolvers) 
-- [Dependencies](#dependencies)
 - [API Documentation](#api-documentation)
   - [Compiler API](./docs/compiler.md)
   - [Validator API](./docs/validator.md)
@@ -158,11 +157,12 @@ import com.github.madhavdhatrak.blaze4j.BlazeValidator;
 
 public class Test {
     public static void main(String[] args) {
-
-        String schemaJson = "{"
-            + "\"$schema\": \"https://json-schema.org/draft/2020-12/schema\","
-            + "\"type\": \"string\""
-            + "}";
+        String schemaJson = """
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "string"
+            }
+            """;
 
         try (CompiledSchema schema = Blaze.compile(schemaJson)) {
             final BlazeValidator validator = new BlazeValidator();
@@ -170,6 +170,8 @@ public class Test {
             // Test valid string input
             boolean validStringResult = validator.validate(schema, "\"hello\"");
             System.out.println("Validation result for \"hello\": " + validStringResult);
+            
+            // Test invalid number input
             boolean invalidNumberResult = validator.validate(schema, "42");
             System.out.println("Validation result for 42: " + invalidNumberResult);
         }
@@ -187,11 +189,12 @@ import com.github.madhavdhatrak.blaze4j.ValidationError;
 
 public class TestBlaze4j {
     public static void main(String[] args) {
-        System.out.println("\nTesting enum validation:");
-        String enumSchemaJson = "{"
-            + "\"$schema\": \"https://json-schema.org/draft/2020-12/schema\","
-            + "\"enum\": [\"red\", \"green\", \"blue\"]"
-            + "}";
+        String enumSchemaJson = """
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "enum": ["red", "green", "blue"]
+            }
+            """;
 
         String invalidEnumInstance = "\"yellow\"";
 
@@ -204,13 +207,9 @@ public class TestBlaze4j {
                 System.out.println("Validation errors:");
                 result.getErrors().forEach(System.out::println);
             }
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 }
-
 ```
 
 ---
@@ -235,15 +234,6 @@ public class TestBlaze4j {
 
 ---
 
-
-## Dependencies
-
-- Java Development Kit (JDK) 11 or higher
-- CMake 3.10 or higher
-- C++ compiler with C++11 support
-- Blaze library (included as a Git submodule)
-
-
 ## API Documentation
 
 - [Compiler API](./docs/Compiler.md)- How to compile schemas, manage memory, and use different dialects.
@@ -263,7 +253,8 @@ public class TestBlaze4j {
 
 Feel free to open an issue for bugs or feature requests, or submit a pull request to improve the project. Whether it's fixing a typo, improving the docs, or adding new features—every contribution counts!
 
-For local installation, see [installation.md](installation.md)
+For local installation and development, see [CONTRIBUTING.md](./docs/CONTRIBUTING.md). The project uses Git submodules, so when cloning the repository, use:
+
 
 ## Credits
 
