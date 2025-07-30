@@ -36,18 +36,9 @@ Make sure you have the following tools installed:
 Blaze4J uses Git submodules to include the Blaze library. You can clone the repository and all its submodules in a single command:
 
 ```bash
-git clone https://github.com/MadhavDhatrak/Blaze4J.git
+git clone --recurse-submodules https://github.com/MadhavDhatrak/Blaze4J.git
 cd Blaze4J
 ```
-
-Add blaze as a Submodule:
-Run this command:
-
-```bash
-git submodule add https://github.com/sourcemeta/blaze.git deps/blaze
-```
-
-This will ensure you have the exact version of the Blaze library that Blaze4J is designed to work with.
 
 ## 2. Build Native Libraries
 
