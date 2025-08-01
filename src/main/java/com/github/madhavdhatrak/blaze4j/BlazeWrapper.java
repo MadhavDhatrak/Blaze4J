@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.File;
+import java.lang.ref.Cleaner;
 
 class BlazeWrapper {
     private static final Linker linker = Linker.nativeLinker();
@@ -26,6 +27,7 @@ class BlazeWrapper {
     private static final MethodHandle blazeValidateWithOutputHandle;
     private static final MethodHandle blazeFreeJsonHandle;
     private static final MemorySegment resolverUpcallStub;
+    private static final Cleaner cleaner = Cleaner.create();
 
     static {
         try {
@@ -405,9 +407,30 @@ class BlazeWrapper {
     private static class CompiledSchemaImpl implements CompiledSchema {
         private final long handle;
         private boolean closed = false;
+        private final Cleaner.Cleanable cleanable;
+
+        // State class to hold the resources that need cleanup
+        private static class State implements Runnable {
+            private final long handle;
+            private boolean cleaned = false;
+
+            State(long handle) {
+                this.handle = handle;
+            }
+
+            @Override
+            public void run() {
+                if (!cleaned) {
+                    System.err.println("Cleaning up schema resources via Cleaner for handle: " + handle);
+                    freeCompiledSchema(handle);
+                    cleaned = true;
+                }
+            }
+        }
 
         public CompiledSchemaImpl(long handle) {
             this.handle = handle;
+            this.cleanable = cleaner.register(this, new State(handle));
         }
 
         @Override
@@ -421,18 +444,9 @@ class BlazeWrapper {
         @Override
         public void close() {
             if (!closed) {
-                freeCompiledSchema(handle);
+                cleanable.clean();
                 closed = true;
             }
-        }
-
-        @Override
-        protected void finalize() throws Throwable {
-            if (!closed) {
-                System.err.println("Warning: CompiledSchema was not closed properly.");
-                close();
-            }
-            super.finalize();
         }
     }
 }
