@@ -1,14 +1,22 @@
 package com.github.madhavdhatrak.blaze4j;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 import java.lang.foreign.Arena;
+import java.util.logging.Level;
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class ClasspathResolverTest {
+
+     @BeforeAll
+     public void setUp() {
+        // Configure logging to FINE level for detailed output
+        Blaze4jLogger.configureLogging(Level.FINE);
+     }
 
     /**
      * Test basic validation with Draft 2020-12
@@ -26,21 +34,25 @@ public class ClasspathResolverTest {
             // Test valid object with name and value
             String validJson = "{ \"name\": \"test\", \"value\": 42 }";
             boolean validResult = BlazeWrapper.validateInstance(schema, validJson);
+            System.out.println("Validation result for validJson: " + validResult);
             assertTrue(validResult, "Object with name and value should be valid");
             
             // Test valid object with only required name field
             String minimalJson = "{ \"name\": \"test\" }";
             boolean minimalResult = BlazeWrapper.validateInstance(schema, minimalJson);
+            System.out.println("Validation result for minimalJson: " + minimalResult);
             assertTrue(minimalResult, "Object with only name should be valid");
             
             // Test invalid object missing required name field
             String invalidJson = "{ \"value\": 42 }";
             boolean invalidResult = BlazeWrapper.validateInstance(schema, invalidJson);
+            System.out.println("Validation result for invalidJson: " + invalidResult);
             assertFalse(invalidResult, "Object without name should be invalid");
             
             // Test invalid object with wrong type for value
             String wrongTypeJson = "{ \"name\": \"test\", \"value\": \"not-a-number\" }";
             boolean wrongTypeResult = BlazeWrapper.validateInstance(schema, wrongTypeJson);
+            System.out.println("Validation result for wrongTypeJson: " + wrongTypeResult);
             assertFalse(wrongTypeResult, "Object with non-integer value should be invalid");
         }
     }
