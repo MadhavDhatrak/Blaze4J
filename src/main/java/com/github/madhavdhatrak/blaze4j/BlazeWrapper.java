@@ -164,6 +164,24 @@ class BlazeWrapper {
         // Nothing to do for dummy free
         LOGGER.fine("Using dummy free");
     }
+    
+    /**
+     * Helper to read a null-terminated UTF-8 string from a MemorySegment.
+     */
+    private static String getNullTerminatedUtf8String(MemorySegment seg) {
+        if (seg == null || seg.equals(MemorySegment.NULL)) {
+            return null;
+        }
+        long len = 0;
+        while (seg.get(ValueLayout.JAVA_BYTE, len) != 0) {
+            len++;
+        }
+        byte[] buf = new byte[(int) len];
+        for (int i = 0; i < len; i++) {
+            buf[i] = seg.get(ValueLayout.JAVA_BYTE, i);
+        }
+        return new String(buf, StandardCharsets.UTF_8);
+    }
 
     private static String readClasspathResource(String resourcePath) {
         // Remove leading slashes for classloader compatibility
@@ -329,12 +347,12 @@ class BlazeWrapper {
     static CompiledSchema compileSchema(String schema, Arena arena, String defaultDialect) {
         String walker = "{}";
         try {
-            MemorySegment schemaSeg = arena.allocateUtf8String(schema);
-            MemorySegment walkerSeg = arena.allocateUtf8String(walker);
+            MemorySegment schemaSeg = arena.allocateFrom(schema);
+            MemorySegment walkerSeg = arena.allocateFrom(walker);
             
             // Use the provided default dialect or null
             MemorySegment dialectSeg = defaultDialect != null ? 
-                arena.allocateUtf8String(defaultDialect) : 
+                arena.allocateFrom(defaultDialect) : 
                 MemorySegment.NULL;
 
             long schemaHandle;
@@ -361,7 +379,7 @@ class BlazeWrapper {
 
     static boolean validateInstance(CompiledSchema schema, String instance) {
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment instanceSeg = arena.allocateUtf8String(instance);
+            MemorySegment instanceSeg = arena.allocateFrom(instance);
             long schemaHandle = schema.getHandle();
 
             try {
@@ -374,7 +392,7 @@ class BlazeWrapper {
 
     static ValidationResult validateInstanceWithDetails(CompiledSchema schema, String instance) {
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment instanceSeg = arena.allocateUtf8String(instance);
+            MemorySegment instanceSeg = arena.allocateFrom(instance);
             long schemaHandle = schema.getHandle();
 
             try {
@@ -384,7 +402,7 @@ class BlazeWrapper {
                 }
                 
                 // Convert the C string to Java string
-                String jsonResult = resultSeg.reinterpret(Long.MAX_VALUE).getUtf8String(0);
+                String jsonResult = getNullTerminatedUtf8String(resultSeg.reinterpret(Long.MAX_VALUE));
                 
                 // Free the memory allocated in C++
                 blazeFreeJsonHandle.invoke(resultSeg);
