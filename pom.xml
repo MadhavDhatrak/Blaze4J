@@ -6,10 +6,10 @@
 
   <groupId>io.github.madhavdhatrak</groupId>
   <artifactId>blaze4j</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.2</version>
 
   <name>Blaze4j</name>
-  <description>A Java wrapper for the Sourcemeta Blaze JSON Schema validator using FFM</description>
+  <description>A Java wrapper for the Sourcemeta Blaze JSON Schema validator using stable FFM API (Java 22+)</description>
   <url>https://github.com/madhavdhatrak/blaze4j</url>
   <licenses>
     <license>
@@ -33,8 +33,8 @@
     <tag>HEAD</tag>
   </scm>
   <properties>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.source>22</maven.compiler.source>
+    <maven.compiler.target>22</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -79,7 +79,6 @@
         <version>3.11.0</version>
         <configuration>
           <compilerArgs>
-            <arg>--enable-preview</arg>
           </compilerArgs>
         </configuration>
       </plugin>
@@ -111,7 +110,6 @@
         <configuration>
           <doclint>none</doclint>
           <additionalJOptions>
-            <additionalJOption>--enable-preview</additionalJOption>
           </additionalJOptions>
         </configuration>
       </plugin>
@@ -138,13 +136,13 @@
                 </configuration>
             </plugin>
             
-            <!-- Unit tests with preview features enabled -->
+            
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <argLine>--enable-preview --enable-native-access=ALL-UNNAMED</argLine>
+                    <argLine>--enable-native-access=ALL-UNNAMED</argLine>
                     <useSystemClassLoader>true</useSystemClassLoader>
                 </configuration>
             </plugin>
