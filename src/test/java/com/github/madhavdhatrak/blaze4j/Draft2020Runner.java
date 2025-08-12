@@ -64,7 +64,7 @@ public class Draft2020Runner {
     "allOf.json",
     "anchor.json",
     "anyOf.json",
-    "boolean.json",
+    "boolean_schema.json",
     "const.json",
     "contains.json",
     "content.json",
