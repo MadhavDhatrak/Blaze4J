@@ -53,7 +53,7 @@ Blaze4J bridges Java and native C++ for **fast, standards-compliant JSON Schema 
 <dependency>
     <groupId>io.github.madhavdhatrak</groupId>
     <artifactId>blaze4j</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
 </dependency>
 
 ```
@@ -61,64 +61,20 @@ Blaze4J bridges Java and native C++ for **fast, standards-compliant JSON Schema 
 **Gradle**
 - Add this to your `build.gradle`:
 ```java
-implementation group: 'io.github.madhavdhatrak', name: 'blaze4j', version: '0.0.1'
+implementation group: 'io.github.madhavdhatrak', name: 'blaze4j', version: '0.0.2'
 ```
-
- **Make Sure to have pom.xml Like this**
-```java
-<properties>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-</properties>
-
-<dependencies>
-    <dependency>
-        <groupId>io.github.madhavdhatrak</groupId>
-        <artifactId>blaze4j</artifactId>
-        <version>0.0.1</version>
-    </dependency>
-</dependencies>
-
-<build>
-    <plugins>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <version>3.11.0</version>
-            <configuration>
-                <compilerArgs>
-                    <arg>--enable-preview</arg>
-                </compilerArgs>
-            </configuration>
-        </plugin>
-        <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <version>3.1.0</version>
-            <configuration>
-                <executable>java</executable>
-                <arguments>
-                    <argument>--enable-preview</argument>
-                    <argument>--enable-native-access=ALL-UNNAMED</argument>
-                    <argument>-classpath</argument>
-                    <classpath/>
-                    <argument>${exec.mainClass}</argument>
-                </arguments>
-            </configuration>
-        </plugin>
-    </plugins>
-</build>
-```
-
 **Testing**
 - **Run your test class using**:
 ```java
-mvn clean compile exec:exec -Dexec.mainClass=com.example.Test
+mvn compile exec:java -Dexec.mainClass=com.example.Test
 ```
 _**Replace com.example.Test with the path to your test class**_.
 
-
+---
+> [!IMPORTANT]
+> For more details, check out the repository: **https://github.com/MadhavDhatrak/Blaze4J-examples.git**  
+> It contains examples of both Spring Boot and plain Java applications to help you set up the library quickly.
+---
 ## Usage 
 - **Simple Boolean Result**
 
@@ -139,10 +95,9 @@ public class Test {
             """;
 
         try (CompiledSchema schema = Blaze.compile(schemaJson)) {
-            final BlazeValidator validator = new BlazeValidator();
             
             // Test valid string input
-            boolean validStringResult = validator.validate(schema, "\"hello\"");
+            boolean validStringResult = Blaze.validate(schema, "\"hello\"");
             System.out.println("Validation result for \"hello\": " + validStringResult);
             
             // Test invalid number input
