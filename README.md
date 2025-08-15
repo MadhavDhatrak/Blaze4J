@@ -14,7 +14,7 @@ Blaze4J enables Java developers to validate JSON documents against JSON Schema s
 
 - [Overview](#overview)
 - [Features](#features)
-- [Installation](./installation.md) 
+- [Installation](./CONTRIBUTING.md) 
 - [Usage](#usage) 
 - [Supported Drafts](#supported-drafts) 
 - [Supported Resolvers](#supported-resolvers) 
