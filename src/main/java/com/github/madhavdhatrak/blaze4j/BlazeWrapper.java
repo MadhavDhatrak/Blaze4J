@@ -251,11 +251,8 @@ class BlazeWrapper {
                     return MemorySegment.NULL;
                 }
                 
-                // Handle pre-registered schemas when URI is neither HTTP(S) nor classpath
-                if (uri != null &&
-                    !uri.startsWith("http://") && !uri.startsWith("https://") &&
-                    !uri.startsWith("classpath://") &&
-                    REGISTERED_SCHEMAS.containsKey(uri)) {
+                // Handle pre-registered schemas first (regardless of scheme)
+                if (uri != null && REGISTERED_SCHEMAS.containsKey(uri)) {
                     LOGGER.fine("Found pre-registered schema for URI: " + uri);
                     String schemaJson = REGISTERED_SCHEMAS.get(uri);
                     return processSchemaJson(schemaJson);
