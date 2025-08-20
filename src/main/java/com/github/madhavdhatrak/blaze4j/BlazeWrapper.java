@@ -19,6 +19,7 @@ import java.util.logging.Logger;
 
 class BlazeWrapper {
     private static final Logger LOGGER = Logger.getLogger(BlazeWrapper.class.getName());
+    private static final java.util.concurrent.ConcurrentHashMap<String, String> REGISTERED_SCHEMAS = new java.util.concurrent.ConcurrentHashMap<>();  
     private static final Linker linker = Linker.nativeLinker();
     private static final SymbolLookup symbolLookup;
     private static final MethodHandle blazeCompileHandle;
@@ -250,6 +251,16 @@ class BlazeWrapper {
                     return MemorySegment.NULL;
                 }
                 
+                // Handle pre-registered schemas when URI is neither HTTP(S) nor classpath
+                if (uri != null &&
+                    !uri.startsWith("http://") && !uri.startsWith("https://") &&
+                    !uri.startsWith("classpath://") &&
+                    REGISTERED_SCHEMAS.containsKey(uri)) {
+                    LOGGER.fine("Found pre-registered schema for URI: " + uri);
+                    String schemaJson = REGISTERED_SCHEMAS.get(uri);
+                    return processSchemaJson(schemaJson);
+                }
+
                 // Handle different URI schemes
                 if (uri != null) {
                     if (uri.startsWith("http://") || uri.startsWith("https://")) {
@@ -258,16 +269,18 @@ class BlazeWrapper {
                         return processSchemaJson(schemaJson);
                     }
                     else if (uri.startsWith("classpath://")) {
-                        // New classpath handling
+                        // Existing classpath handling
                         String resourcePath = uri.substring("classpath://".length());
                         LOGGER.fine("Resolving classpath resource: " + resourcePath);
                         String schemaJson = readClasspathResource(resourcePath);
                         // Normalize JSON before returning
-                        schemaJson = schemaJson.trim().replaceFirst("^\\{\\s+", "{");
+                        if (schemaJson != null) {
+                            schemaJson = schemaJson.trim().replaceFirst("^\\{\\s+", "{");
+                        }
                         return processSchemaJson(schemaJson);
                     }
                     else {
-                        LOGGER.warning("Unsupported URI scheme: " + uri);
+                        LOGGER.warning("Unsupported URI scheme or unregistered URI: " + uri);
                     }
                 }
             }
@@ -329,6 +342,14 @@ class BlazeWrapper {
             LOGGER.severe("Error fetching schema from " + uri + ": " + e.getMessage());
             return null;
         }
+    }
+
+    public static void registerSchema(String uri, String schemaJson) {
+        if (uri == null || schemaJson == null) {
+            throw new IllegalArgumentException("uri and schemaJson must not be null");
+        }
+        LOGGER.fine("Registering schema for URI: " + uri);
+        REGISTERED_SCHEMAS.put(uri, schemaJson);
     }
 
     static String compile(String schema, String walker, String resolver) {

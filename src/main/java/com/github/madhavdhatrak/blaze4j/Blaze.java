@@ -75,4 +75,20 @@ public class Blaze {
         BlazeValidator validator = new BlazeValidator();
         return validator.validateWithDetails(schema, instance);
     }
+
+    /**
+     * Registers a schema document under the given URI so that $ref look-ups can
+     * resolve the URI without any network or classpath access.
+     * <p>
+     * Example usage:
+     * <pre>
+     * Blaze.register("https://example.com/schemas/common.json", commonSchema);
+     * </pre>
+     *
+     * @param uri         the identifier that will appear in $ref values
+     * @param schemaJson  the JSON representation of the schema document
+     */
+    public static void register(String uri, String schemaJson) {
+        BlazeWrapper.registerSchema(uri, schemaJson);
+    }
 }
