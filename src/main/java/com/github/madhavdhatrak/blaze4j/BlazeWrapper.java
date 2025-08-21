@@ -19,7 +19,6 @@ import java.util.logging.Logger;
 
 class BlazeWrapper {
     private static final Logger LOGGER = Logger.getLogger(BlazeWrapper.class.getName());
-    private static final java.util.concurrent.ConcurrentHashMap<String, String> REGISTERED_SCHEMAS = new java.util.concurrent.ConcurrentHashMap<>();  
     private static final Linker linker = Linker.nativeLinker();
     private static final SymbolLookup symbolLookup;
     private static final MethodHandle blazeCompileHandle;
@@ -204,6 +203,8 @@ class BlazeWrapper {
         }
     }
 
+    private static final ThreadLocal<SchemaRegistry> CURRENT_REGISTRY = new ThreadLocal<>();
+
     private static MemorySegment customResolver(MemorySegment uriPtrSegment) {
         try {
             // Check if segment is null or NULL
@@ -251,10 +252,10 @@ class BlazeWrapper {
                     return MemorySegment.NULL;
                 }
                 
-                // Handle pre-registered schemas first (regardless of scheme)
-                if (uri != null && REGISTERED_SCHEMAS.containsKey(uri)) {
-                    LOGGER.fine("Found pre-registered schema for URI: " + uri);
-                    String schemaJson = REGISTERED_SCHEMAS.get(uri);
+                SchemaRegistry registry = CURRENT_REGISTRY.get();
+                if (uri != null && registry != null && registry.contains(uri)) {
+                    LOGGER.fine("Found schema in registry for URI: " + uri);
+                    String schemaJson = registry.resolve(uri);
                     return processSchemaJson(schemaJson);
                 }
 
@@ -341,14 +342,6 @@ class BlazeWrapper {
         }
     }
 
-    public static void registerSchema(String uri, String schemaJson) {
-        if (uri == null || schemaJson == null) {
-            throw new IllegalArgumentException("uri and schemaJson must not be null");
-        }
-        LOGGER.fine("Registering schema for URI: " + uri);
-        REGISTERED_SCHEMAS.put(uri, schemaJson);
-    }
-
     static String compile(String schema, String walker, String resolver) {
         try (Arena arena = Arena.ofConfined()) {
             CompiledSchema compiledSchema = compileSchema(schema, arena);
@@ -359,11 +352,24 @@ class BlazeWrapper {
     }
 
     static CompiledSchema compileSchema(String schema, Arena arena) {
-        return compileSchema(schema, arena, null);
+        return compileSchema(schema, null, arena, null);
     }
 
     static CompiledSchema compileSchema(String schema, Arena arena, String defaultDialect) {
+        return compileSchema(schema, null, arena, defaultDialect);
+    }
+    
+    static CompiledSchema compileSchema(String schema, SchemaRegistry registry, Arena arena) {
+        return compileSchema(schema, registry, arena, null);
+    }
+
+    static CompiledSchema compileSchema(String schema, SchemaRegistry registry, Arena arena, String defaultDialect) {
         String walker = "{}";
+        
+        if (registry != null) {
+            CURRENT_REGISTRY.set(registry);
+        }
+        
         try {
             MemorySegment schemaSeg = arena.allocateFrom(schema);
             MemorySegment walkerSeg = arena.allocateFrom(walker);
@@ -392,6 +398,10 @@ class BlazeWrapper {
             return new CompiledSchemaImpl(schemaHandle);
         } catch (Throwable e) {
             throw new RuntimeException("Unexpected error during schema compilation", e);
+        } finally {
+            if (registry != null) {
+                CURRENT_REGISTRY.remove();
+            }
         }
     }
 

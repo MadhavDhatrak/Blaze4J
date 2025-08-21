@@ -6,6 +6,8 @@ import java.lang.foreign.Arena;
  * Main entry point for Blaze schema operations
  */
 public class Blaze {
+
+    
     /**
      * Compiles a JSON schema
      * 
@@ -53,6 +55,56 @@ public class Blaze {
     }
     
     /**
+     * Compiles a JSON schema with explicit schema registry
+     * 
+     * @param schema JSON schema to compile
+     * @param registry Schema registry for resolving $ref
+     * @param arena Memory arena for resource management
+     * @return A compiled schema
+     */
+    public static CompiledSchema compile(String schema, SchemaRegistry registry, Arena arena) {
+        return BlazeWrapper.compileSchema(schema, registry, arena);
+    }
+    
+    /**
+     * Compiles a JSON schema with explicit schema registry and default dialect
+     * 
+     * @param schema JSON schema to compile
+     * @param registry Schema registry for resolving $ref
+     * @param arena Memory arena for resource management
+     * @param defaultDialect Default dialect to use if the schema doesn't specify one
+     * @return A compiled schema
+     */
+    public static CompiledSchema compile(String schema, SchemaRegistry registry, Arena arena, String defaultDialect) {
+        return BlazeWrapper.compileSchema(schema, registry, arena, defaultDialect);
+    }
+    
+    /**
+     * Compiles a JSON schema with explicit schema registry, creating and managing an Arena internally
+     * 
+     * @param schema JSON schema to compile
+     * @param registry Schema registry for resolving $ref
+     * @return A compiled schema
+     */
+    public static CompiledSchema compile(String schema, SchemaRegistry registry) {
+        Arena arena = Arena.ofConfined();
+        return BlazeWrapper.compileSchema(schema, registry, arena);
+    }
+    
+    /**
+     * Compiles a JSON schema with explicit schema registry and default dialect, creating and managing an Arena internally
+     * 
+     * @param schema JSON schema to compile
+     * @param registry Schema registry for resolving $ref
+     * @param defaultDialect Default dialect to use if the schema doesn't specify one
+     * @return A compiled schema
+     */
+    public static CompiledSchema compile(String schema, SchemaRegistry registry, String defaultDialect) {
+        Arena arena = Arena.ofConfined();
+        return BlazeWrapper.compileSchema(schema, registry, arena, defaultDialect);
+    }
+    
+    /**
      * Validates a JSON instance against a schema
      * 
      * @param schema The compiled schema
@@ -76,19 +128,14 @@ public class Blaze {
         return validator.validateWithDetails(schema, instance);
     }
 
+
+    
     /**
-     * Registers a schema document under the given URI so that $ref look-ups can
-     * resolve the URI without any network or classpath access.
-     * <p>
-     * Example usage:
-     * <pre>
-     * Blaze.register("https://example.com/schemas/common.json", commonSchema);
-     * </pre>
-     *
-     * @param uri         the identifier that will appear in $ref values
-     * @param schemaJson  the JSON representation of the schema document
+     * Creates a new SchemaRegistry instance for pre-registering schemas
+     * 
+     * @return A new SchemaRegistry instance
      */
-    public static void register(String uri, String schemaJson) {
-        BlazeWrapper.registerSchema(uri, schemaJson);
+    public static SchemaRegistry newRegistry() {
+        return new SchemaRegistry();
     }
 }

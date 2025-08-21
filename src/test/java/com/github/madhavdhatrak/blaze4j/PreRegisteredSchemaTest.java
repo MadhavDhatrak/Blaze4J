@@ -10,7 +10,7 @@ public class PreRegisteredSchemaTest {
 
    
     /**
-     * Test basic schema pre-registration and validation with custom URI
+     * Test basic schema pre-registration and validation with custom URI using SchemaRegistry
      */
     @Test
     public void testBasicPreRegisteredSchema() {
@@ -22,7 +22,10 @@ public class PreRegisteredSchemaTest {
             }""";
         
         String schemaUri = "my-integer-schema";
-        Blaze.register(schemaUri, integerSchema);
+        
+        // Create a registry and register the schema
+        SchemaRegistry registry = Blaze.newRegistry();
+        registry.register(schemaUri, integerSchema);
         
         String mainSchema = """
             {
@@ -30,7 +33,7 @@ public class PreRegisteredSchemaTest {
               "$ref": "my-integer-schema"
             }""";
 
-        try (CompiledSchema schema = Blaze.compile(mainSchema)) {
+        try (CompiledSchema schema = Blaze.compile(mainSchema, registry)) {
             
             // Test valid integer
             boolean validResult = Blaze.validate(schema, "42");
@@ -47,7 +50,7 @@ public class PreRegisteredSchemaTest {
    
 
     /**
-     * Test with multiple pre-registered schemas that reference each other using custom URIs
+     * Test with multiple pre-registered schemas that reference each other using custom URIs with SchemaRegistry
      */
     @Test
     public void testMultiplePreRegisteredSchemas() {
@@ -76,9 +79,10 @@ public class PreRegisteredSchemaTest {
               "required": ["name"]
             }""";
         
-        
-        Blaze.register("address-schema", addressSchema);
-        Blaze.register("person-schema", personSchema);
+        // Create a registry and register both schemas
+        SchemaRegistry registry = Blaze.newRegistry();
+        registry.register("address-schema", addressSchema);
+        registry.register("person-schema", personSchema);
         
         // Create a schema that references the person schema
         String mainSchema = """
@@ -87,7 +91,7 @@ public class PreRegisteredSchemaTest {
               "$ref": "person-schema"
             }""";
 
-        try (CompiledSchema schema = Blaze.compile(mainSchema)) {
+        try (CompiledSchema schema = Blaze.compile(mainSchema, registry)) {
             
             String validJson = """
                 {
