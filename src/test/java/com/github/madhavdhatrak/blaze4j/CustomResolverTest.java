@@ -57,8 +57,9 @@ public class CustomResolverTest {
             "  \"$ref\": \"http://localhost:" + PORT + "/draft2020-12/subSchemas.json#/$defs/integer\"\n" +
             "}";
 
+        SchemaCompiler compiler = new SchemaCompiler();
         try (Arena arena = Arena.ofConfined();
-             CompiledSchema schema = Blaze.compile(schemaJson, arena)) {
+             CompiledSchema schema = compiler.compile(schemaJson, arena)) {
             
             final BlazeValidator validator = new BlazeValidator();
             
@@ -86,8 +87,9 @@ public class CustomResolverTest {
             "  \"$ref\": \"http://localhost:" + PORT + "/draft2020-12/subSchemas.json#/$defs/integer\"\n" +
             "}";
 
+        SchemaCompiler compiler = new SchemaCompiler();
         try (Arena arena = Arena.ofConfined();
-             CompiledSchema schema = Blaze.compile(schemaJson, arena)) {
+             CompiledSchema schema = compiler.compile(schemaJson, arena)) {
             
             final BlazeValidator validator = new BlazeValidator();
             
@@ -114,8 +116,9 @@ public class CustomResolverTest {
             "  \"$ref\": \"http://localhost:" + PORT + "/draft2020-12/locationIndependentIdentifier.json#foo\"\n" +
             "}";
 
+        SchemaCompiler compiler = new SchemaCompiler();
         try (Arena arena = Arena.ofConfined();
-             CompiledSchema schema = Blaze.compile(schemaJson, arena)) {
+             CompiledSchema schema = compiler.compile(schemaJson, arena)) {
             
             final BlazeValidator validator = new BlazeValidator();
             
@@ -142,8 +145,9 @@ public class CustomResolverTest {
             "  \"$ref\": \"http://localhost:" + PORT + "/draft2020-12/subSchemas.json#/$defs/refToInteger\"\n" +
             "}";
 
+        SchemaCompiler compiler = new SchemaCompiler();
         try (Arena arena = Arena.ofConfined();
-             CompiledSchema schema = Blaze.compile(schemaJson, arena)) {
+             CompiledSchema schema = compiler.compile(schemaJson, arena)) {
             
             final BlazeValidator validator = new BlazeValidator();
             
@@ -174,8 +178,9 @@ public class CustomResolverTest {
             "  }\n" +
             "}";
 
+        SchemaCompiler compiler = new SchemaCompiler();
         try (Arena arena = Arena.ofConfined();
-             CompiledSchema schema = Blaze.compile(schemaJson, arena)) {
+             CompiledSchema schema = compiler.compile(schemaJson, arena)) {
             
             final BlazeValidator validator = new BlazeValidator();
             
@@ -210,8 +215,9 @@ public class CustomResolverTest {
             "  \"$ref\": \"http://localhost:" + PORT + "/draft2020-12/locationIndependentIdentifier.json#foo\"\n" +
             "}";
 
+        SchemaCompiler compiler = new SchemaCompiler();
         try (Arena arena = Arena.ofConfined();
-             CompiledSchema schema = Blaze.compile(schemaJson, arena)) {
+             CompiledSchema schema = compiler.compile(schemaJson, arena)) {
             
             final BlazeValidator validator = new BlazeValidator();
             

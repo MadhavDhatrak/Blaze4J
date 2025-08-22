@@ -150,21 +150,7 @@ class BlazeWrapper {
             throw new RuntimeException("Failed to create resolver upcall stub", e);
         }
     }
-    
-    // Dummy malloc for testing purposes
-    private static MemorySegment dummyMalloc(long size) {
-        // For testing, just use an arena to allocate memory
-        MemorySegment segment = Arena.global().allocate(size);
-        LOGGER.fine("Using dummy malloc: " + size + " bytes");
-        return segment;
-    }
-    
-    // Dummy free for testing purposes
-    private static void dummyFree(MemorySegment segment) {
-        // Nothing to do for dummy free
-        LOGGER.fine("Using dummy free");
-    }
-    
+        
     /**
      * Helper to read a null-terminated UTF-8 string from a MemorySegment.
      */
@@ -203,6 +189,19 @@ class BlazeWrapper {
         }
     }
 
+    // Schema registry for the current resolution context
+    private static final ThreadLocal<SchemaRegistry> CURRENT_REGISTRY = new ThreadLocal<>();
+
+    // Set the current registry for schema resolution
+    static void setCurrentRegistry(SchemaRegistry registry) {
+        CURRENT_REGISTRY.set(registry);
+    }
+    
+    // Remove the current registry from the thread local
+    static void clearCurrentRegistry() {
+        CURRENT_REGISTRY.remove();
+    }
+    
     private static MemorySegment customResolver(MemorySegment uriPtrSegment) {
         try {
             // Check if segment is null or NULL
@@ -250,6 +249,14 @@ class BlazeWrapper {
                     return MemorySegment.NULL;
                 }
                 
+                // Get the registry from the thread local storage
+                SchemaRegistry registry = CURRENT_REGISTRY.get();
+                if (uri != null && registry != null && registry.contains(uri)) {
+                    LOGGER.fine("Found schema in registry for URI: " + uri);
+                    String schemaJson = registry.resolve(uri);
+                    return processSchemaJson(schemaJson);
+                }
+
                 // Handle different URI schemes
                 if (uri != null) {
                     if (uri.startsWith("http://") || uri.startsWith("https://")) {
@@ -258,16 +265,18 @@ class BlazeWrapper {
                         return processSchemaJson(schemaJson);
                     }
                     else if (uri.startsWith("classpath://")) {
-                        // New classpath handling
+                        // Existing classpath handling
                         String resourcePath = uri.substring("classpath://".length());
                         LOGGER.fine("Resolving classpath resource: " + resourcePath);
                         String schemaJson = readClasspathResource(resourcePath);
                         // Normalize JSON before returning
-                        schemaJson = schemaJson.trim().replaceFirst("^\\{\\s+", "{");
+                        if (schemaJson != null) {
+                            schemaJson = schemaJson.trim().replaceFirst("^\\{\\s+", "{");
+                        }
                         return processSchemaJson(schemaJson);
                     }
                     else {
-                        LOGGER.warning("Unsupported URI scheme: " + uri);
+                        LOGGER.warning("Unsupported URI scheme or unregistered URI: " + uri);
                     }
                 }
             }
@@ -341,11 +350,24 @@ class BlazeWrapper {
     }
 
     static CompiledSchema compileSchema(String schema, Arena arena) {
-        return compileSchema(schema, arena, null);
+        return compileSchema(schema, null, arena, null);
     }
 
     static CompiledSchema compileSchema(String schema, Arena arena, String defaultDialect) {
+        return compileSchema(schema, null, arena, defaultDialect);
+    }
+    
+    static CompiledSchema compileSchema(String schema, SchemaRegistry registry, Arena arena) {
+        return compileSchema(schema, registry, arena, null);
+    }
+
+    static CompiledSchema compileSchema(String schema, SchemaRegistry registry, Arena arena, String defaultDialect) {
         String walker = "{}";
+        
+        if (registry != null) {
+            setCurrentRegistry(registry);
+        }
+        
         try {
             MemorySegment schemaSeg = arena.allocateFrom(schema);
             MemorySegment walkerSeg = arena.allocateFrom(walker);
@@ -374,6 +396,10 @@ class BlazeWrapper {
             return new CompiledSchemaImpl(schemaHandle);
         } catch (Throwable e) {
             throw new RuntimeException("Unexpected error during schema compilation", e);
+        } finally {
+            if (registry != null) {
+                clearCurrentRegistry();
+            }
         }
     }
 

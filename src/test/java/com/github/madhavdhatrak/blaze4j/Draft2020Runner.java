@@ -228,8 +228,9 @@ public class Draft2020Runner {
         
         CompiledSchema schema = null;
         try {
-            // Use the new overloaded method without Arena parameter
-            schema = Blaze.compile(schemaJson, DEFAULT_DIALECT);
+            // Create compiler and compile the schema
+            SchemaCompiler compiler = new SchemaCompiler();
+            schema = compiler.compile(schemaJson, DEFAULT_DIALECT);
             
             final BlazeValidator validator = new BlazeValidator();
             boolean result = validator.validate(schema, dataJson);
