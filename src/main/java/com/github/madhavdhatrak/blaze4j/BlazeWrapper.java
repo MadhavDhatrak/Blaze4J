@@ -150,21 +150,7 @@ class BlazeWrapper {
             throw new RuntimeException("Failed to create resolver upcall stub", e);
         }
     }
-    
-    // Dummy malloc for testing purposes
-    private static MemorySegment dummyMalloc(long size) {
-        // For testing, just use an arena to allocate memory
-        MemorySegment segment = Arena.global().allocate(size);
-        LOGGER.fine("Using dummy malloc: " + size + " bytes");
-        return segment;
-    }
-    
-    // Dummy free for testing purposes
-    private static void dummyFree(MemorySegment segment) {
-        // Nothing to do for dummy free
-        LOGGER.fine("Using dummy free");
-    }
-    
+        
     /**
      * Helper to read a null-terminated UTF-8 string from a MemorySegment.
      */
@@ -203,8 +189,19 @@ class BlazeWrapper {
         }
     }
 
+    // Schema registry for the current resolution context
     private static final ThreadLocal<SchemaRegistry> CURRENT_REGISTRY = new ThreadLocal<>();
 
+    // Set the current registry for schema resolution
+    static void setCurrentRegistry(SchemaRegistry registry) {
+        CURRENT_REGISTRY.set(registry);
+    }
+    
+    // Remove the current registry from the thread local
+    static void clearCurrentRegistry() {
+        CURRENT_REGISTRY.remove();
+    }
+    
     private static MemorySegment customResolver(MemorySegment uriPtrSegment) {
         try {
             // Check if segment is null or NULL
@@ -252,6 +249,7 @@ class BlazeWrapper {
                     return MemorySegment.NULL;
                 }
                 
+                // Get the registry from the thread local storage
                 SchemaRegistry registry = CURRENT_REGISTRY.get();
                 if (uri != null && registry != null && registry.contains(uri)) {
                     LOGGER.fine("Found schema in registry for URI: " + uri);
@@ -367,7 +365,7 @@ class BlazeWrapper {
         String walker = "{}";
         
         if (registry != null) {
-            CURRENT_REGISTRY.set(registry);
+            setCurrentRegistry(registry);
         }
         
         try {
@@ -400,7 +398,7 @@ class BlazeWrapper {
             throw new RuntimeException("Unexpected error during schema compilation", e);
         } finally {
             if (registry != null) {
-                CURRENT_REGISTRY.remove();
+                clearCurrentRegistry();
             }
         }
     }

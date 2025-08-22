@@ -13,7 +13,8 @@ public class BlazeWrapperTest {
             + "\"type\": \"string\""
             + "}";
 
-        try (CompiledSchema schema = Blaze.compile(schemaJson)) {
+        SchemaCompiler compiler = new SchemaCompiler();
+        try (CompiledSchema schema = compiler.compile(schemaJson)) {
             
             final BlazeValidator validator = new BlazeValidator();
             
@@ -49,7 +50,8 @@ public class BlazeWrapperTest {
             + "\"required\": [\"name\"]"
             + "}";
 
-        try (CompiledSchema schema = Blaze.compile(schemaJson)) {
+        SchemaCompiler compiler = new SchemaCompiler();
+        try (CompiledSchema schema = compiler.compile(schemaJson)) {
             
             final BlazeValidator validator = new BlazeValidator();
             
@@ -79,7 +81,8 @@ public class BlazeWrapperTest {
             + "\"maxItems\": 4"
             + "}";
 
-        try (CompiledSchema schema = Blaze.compile(schemaJson)) {
+        SchemaCompiler compiler = new SchemaCompiler();
+        try (CompiledSchema schema = compiler.compile(schemaJson)) {
             
             final BlazeValidator validator = new BlazeValidator();
             
@@ -115,7 +118,8 @@ public class BlazeWrapperTest {
             + "\"multipleOf\": 5"
             + "}";
 
-        try (CompiledSchema schema = Blaze.compile(schemaJson)) {
+        SchemaCompiler compiler = new SchemaCompiler();
+        try (CompiledSchema schema = compiler.compile(schemaJson)) {
             
             final BlazeValidator validator = new BlazeValidator();
             
@@ -149,7 +153,8 @@ public class BlazeWrapperTest {
             + "\"pattern\": \"^[A-Z][a-z]+$\""
             + "}";
 
-        try (CompiledSchema schema = Blaze.compile(schemaJson)) {
+        SchemaCompiler compiler = new SchemaCompiler();
+        try (CompiledSchema schema = compiler.compile(schemaJson)) {
             
             final BlazeValidator validator = new BlazeValidator();
             
@@ -180,7 +185,8 @@ public class BlazeWrapperTest {
             + "]"
             + "}";
 
-        try (CompiledSchema schema = Blaze.compile(schemaJson)) {
+        SchemaCompiler compiler = new SchemaCompiler();
+        try (CompiledSchema schema = compiler.compile(schemaJson)) {
             
             final BlazeValidator validator = new BlazeValidator();
             

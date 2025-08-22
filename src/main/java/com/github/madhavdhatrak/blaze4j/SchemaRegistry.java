@@ -9,6 +9,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SchemaRegistry {
     private final Map<String, String> schemas = new ConcurrentHashMap<>();
     
+    /**
+     * Creates a new empty SchemaRegistry instance
+     * 
+     * @return A new SchemaRegistry instance
+     */
+    public static SchemaRegistry create() {
+        return new SchemaRegistry();
+    }
+    
     public void register(String uri, String schemaJson) {
         if (uri == null || schemaJson == null) {
             throw new IllegalArgumentException("uri and schemaJson must not be null");

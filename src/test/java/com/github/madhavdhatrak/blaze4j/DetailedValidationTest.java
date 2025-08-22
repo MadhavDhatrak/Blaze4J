@@ -18,10 +18,12 @@ public class DetailedValidationTest {
         String schema = "{ \"$schema\": \"https://json-schema.org/draft/2020-12/schema\", \"enum\": [\"red\", \"green\", \"blue\"] }";
         String instance = "\"yellow\"";
 
+        SchemaCompiler compiler = new SchemaCompiler();
         try (Arena arena = Arena.ofConfined()) {
-            CompiledSchema compiledSchema = Blaze.compile(schema, arena);
-
-            ValidationResult result = Blaze.validateWithDetails(compiledSchema, instance);
+            CompiledSchema compiledSchema = compiler.compile(schema, arena);
+            
+            BlazeValidator validator = new BlazeValidator();
+            ValidationResult result = validator.validateWithDetails(compiledSchema, instance);
 
             if (!result.isValid()) {
                 result.getErrors().forEach(System.out::println);
@@ -36,10 +38,12 @@ public class DetailedValidationTest {
         String schema = "{ \"$schema\": \"https://json-schema.org/draft/2020-12/schema\", \"type\": \"array\", \"maxItems\": 2 }";
         String instance = "[1, 2, 3]";
 
+        SchemaCompiler compiler = new SchemaCompiler();
         try (Arena arena = Arena.ofConfined()) {
-            CompiledSchema compiledSchema = Blaze.compile(schema, arena);
-
-            ValidationResult result = Blaze.validateWithDetails(compiledSchema, instance);
+            CompiledSchema compiledSchema = compiler.compile(schema, arena);
+            
+            BlazeValidator validator = new BlazeValidator();
+            ValidationResult result = validator.validateWithDetails(compiledSchema, instance);
 
             if (!result.isValid()) {
                 result.getErrors().forEach(System.out::println);
@@ -54,10 +58,12 @@ public class DetailedValidationTest {
         String schema = "{ \"$schema\": \"https://json-schema.org/draft/2020-12/schema\", \"type\": \"object\", \"properties\": { \"id\": { \"type\": \"integer\" } }, \"additionalProperties\": false }";
         String instance = "{ \"id\": 1, \"extra\": \"oops\" }";
 
+        SchemaCompiler compiler = new SchemaCompiler();
         try (Arena arena = Arena.ofConfined()) {
-            CompiledSchema compiledSchema = Blaze.compile(schema, arena);
-
-            ValidationResult result = Blaze.validateWithDetails(compiledSchema, instance);
+            CompiledSchema compiledSchema = compiler.compile(schema, arena);
+            
+            BlazeValidator validator = new BlazeValidator();
+            ValidationResult result = validator.validateWithDetails(compiledSchema, instance);
 
             if (!result.isValid()) {
                 result.getErrors().forEach(System.out::println);
@@ -72,9 +78,11 @@ public class DetailedValidationTest {
         String schema = "{ \"$schema\": \"https://json-schema.org/draft/2020-12/schema\", \"type\": \"string\", \"pattern\": \"^[A-Z]{3}-\\\\d{3}$\" }";
         String instance = "\"abc-123\""; 
 
+        SchemaCompiler compiler = new SchemaCompiler();
+        BlazeValidator validator = new BlazeValidator();
         try (Arena arena = Arena.ofConfined()) {
-            CompiledSchema compiledSchema = Blaze.compile(schema, arena);
-            ValidationResult result = Blaze.validateWithDetails(compiledSchema, instance);
+            CompiledSchema compiledSchema = compiler.compile(schema, arena);
+            ValidationResult result = validator.validateWithDetails(compiledSchema, instance);
 
             if (!result.isValid()) {
                 result.getErrors().forEach(System.out::println);
@@ -89,9 +97,11 @@ public class DetailedValidationTest {
         String schema = "{ \"$schema\": \"https://json-schema.org/draft/2020-12/schema\", \"type\": \"integer\", \"multipleOf\": 10 }";
         String instance = "25";
 
+        SchemaCompiler compiler = new SchemaCompiler();
+        BlazeValidator validator = new BlazeValidator();
         try (Arena arena = Arena.ofConfined()) {
-            CompiledSchema compiledSchema = Blaze.compile(schema, arena);
-            ValidationResult result = Blaze.validateWithDetails(compiledSchema, instance);
+            CompiledSchema compiledSchema = compiler.compile(schema, arena);
+            ValidationResult result = validator.validateWithDetails(compiledSchema, instance);
 
             if (!result.isValid()) {
                 result.getErrors().forEach(System.out::println);
@@ -106,9 +116,11 @@ public class DetailedValidationTest {
         String schema = "{ \"$schema\": \"https://json-schema.org/draft/2020-12/schema\", \"type\": \"object\", \"properties\": { \"user\": { \"type\": \"object\", \"properties\": { \"email\": { \"type\": \"string\", \"format\": \"email\" } }, \"required\": [\"email\"] } } }";
         String instance = "{ \"user\": {} }";
 
+        SchemaCompiler compiler = new SchemaCompiler();
+        BlazeValidator validator = new BlazeValidator();
         try (Arena arena = Arena.ofConfined()) {
-            CompiledSchema compiledSchema = Blaze.compile(schema, arena);
-            ValidationResult result = Blaze.validateWithDetails(compiledSchema, instance);
+            CompiledSchema compiledSchema = compiler.compile(schema, arena);
+            ValidationResult result = validator.validateWithDetails(compiledSchema, instance);
 
             if (!result.isValid()) {
                 result.getErrors().forEach(System.out::println);
@@ -141,9 +153,11 @@ public class DetailedValidationTest {
             "  \"tags\": [\"developer\", \"javascript\"]\n" +
             "}";
 
+        SchemaCompiler compiler = new SchemaCompiler();
+        BlazeValidator validator = new BlazeValidator();
         try (Arena arena = Arena.ofConfined()) {
-            CompiledSchema compiledSchema = Blaze.compile(schema, arena);
-            ValidationResult result = Blaze.validateWithDetails(compiledSchema, instance);
+            CompiledSchema compiledSchema = compiler.compile(schema, arena);
+            ValidationResult result = validator.validateWithDetails(compiledSchema, instance);
             
               if (!result.isValid()) {
                 result.getErrors().forEach(System.out::println);
@@ -169,9 +183,11 @@ public class DetailedValidationTest {
             "  [6, 7, 8, 9]\n" +
             "]";
 
+        SchemaCompiler compiler = new SchemaCompiler();
+        BlazeValidator validator = new BlazeValidator();
         try (Arena arena = Arena.ofConfined()) {
-            CompiledSchema compiledSchema = Blaze.compile(schema, arena);
-            ValidationResult result = Blaze.validateWithDetails(compiledSchema, instance);
+            CompiledSchema compiledSchema = compiler.compile(schema, arena);
+            ValidationResult result = validator.validateWithDetails(compiledSchema, instance);
             
              if (!result.isValid()) {
                 result.getErrors().forEach(System.out::println);
@@ -199,9 +215,11 @@ public class DetailedValidationTest {
             "  \"credit_card\": \"1234-5678-9012-3456\"\n" +
             "}";
 
+        SchemaCompiler compiler = new SchemaCompiler();
+        BlazeValidator validator = new BlazeValidator();
         try (Arena arena = Arena.ofConfined()) {
-            CompiledSchema compiledSchema = Blaze.compile(schema, arena);
-            ValidationResult result = Blaze.validateWithDetails(compiledSchema, instance);
+            CompiledSchema compiledSchema = compiler.compile(schema, arena);
+            ValidationResult result = validator.validateWithDetails(compiledSchema, instance);
             
             if (!result.isValid()) {
                 result.getErrors().forEach(System.out::println);
@@ -225,9 +243,11 @@ public class DetailedValidationTest {
             "  \"prop4\": \"value4\"\n" +
             "}";
 
+        SchemaCompiler compiler = new SchemaCompiler();
+        BlazeValidator validator = new BlazeValidator();
         try (Arena arena = Arena.ofConfined()) {
-            CompiledSchema compiledSchema = Blaze.compile(schema, arena);
-            ValidationResult result = Blaze.validateWithDetails(compiledSchema, instance);
+            CompiledSchema compiledSchema = compiler.compile(schema, arena);
+            ValidationResult result = validator.validateWithDetails(compiledSchema, instance);
             
             assertFalse(result.isValid());
             assertTrue(result.getErrors().size() > 0);
@@ -257,9 +277,11 @@ public class DetailedValidationTest {
             "  \"uri\": \"not a uri\"\n" +
             "}";
 
+        SchemaCompiler compiler = new SchemaCompiler();
+        BlazeValidator validator = new BlazeValidator();
         try (Arena arena = Arena.ofConfined()) {
-            CompiledSchema compiledSchema = Blaze.compile(schema, arena);
-            ValidationResult result = Blaze.validateWithDetails(compiledSchema, instance);
+            CompiledSchema compiledSchema = compiler.compile(schema, arena);
+            ValidationResult result = validator.validateWithDetails(compiledSchema, instance);
             
             // Note: Format validation might be annotation-only by default
             // So we're only checking that we get a result, not necessarily errors
@@ -279,18 +301,20 @@ public class DetailedValidationTest {
             + "\"$ref\": \"classpath://test-schema.json\""
             + "}";
         
+        SchemaCompiler compiler = new SchemaCompiler();
         try (Arena arena = Arena.ofConfined();
-             CompiledSchema schema = Blaze.compile(schemaJson, arena)) {
+             CompiledSchema schema = compiler.compile(schemaJson, arena)) {
             
+            BlazeValidator validator = new BlazeValidator();
             // Test valid instance
             String validInstance = "{\"name\":\"test\",\"value\":42}";
-            ValidationResult validResult = Blaze.validateWithDetails(schema, validInstance);
+            ValidationResult validResult = validator.validateWithDetails(schema, validInstance);
             assertTrue(validResult.isValid(), "Instance with valid properties should validate");
             assertEquals(0, validResult.getErrors().size(), "Valid instance should have no errors");
             
             // Test invalid instance (missing required property)
             String invalidInstance = "{\"value\":42}";
-            ValidationResult invalidResult = Blaze.validateWithDetails(schema, invalidInstance);
+            ValidationResult invalidResult = validator.validateWithDetails(schema, invalidInstance);
             assertFalse(invalidResult.isValid(), "Instance missing required property should not validate");
             assertTrue(invalidResult.getErrors().size() > 0, "Invalid instance should have errors");
             
@@ -300,7 +324,7 @@ public class DetailedValidationTest {
             
             // Test invalid instance (wrong type)
             String wrongTypeInstance = "{\"name\":\"test\",\"value\":\"not-an-integer\"}";
-            ValidationResult wrongTypeResult = Blaze.validateWithDetails(schema, wrongTypeInstance);
+            ValidationResult wrongTypeResult = validator.validateWithDetails(schema, wrongTypeInstance);
             assertFalse(wrongTypeResult.isValid(), "Instance with wrong type should not validate");
             assertTrue(wrongTypeResult.getErrors().size() > 0, "Type error instance should have errors");
             
