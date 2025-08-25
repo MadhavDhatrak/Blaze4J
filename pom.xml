@@ -6,7 +6,7 @@
 
   <groupId>io.github.madhavdhatrak</groupId>
   <artifactId>blaze4j</artifactId>
-  <version>0.0.2</version>
+  <version>0.0.3</version>
 
   <name>Blaze4j</name>
   <description>A Java wrapper for the Sourcemeta Blaze JSON Schema validator using stable FFM API (Java 22+)</description>
