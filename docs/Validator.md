@@ -32,7 +32,7 @@ The BlazeWrapper Validator enables fast and robust validation of JSON data again
 
 **Validates a JSON instance against a schema. Returns a simple boolean result.**
 ```java
-public static boolean validate(CompiledSchema schema, String instance)
+public boolean validate(CompiledSchema schema, String instance)
 ```
 - **Parameters:**
   - `schema`: The compiled schema.
@@ -42,11 +42,11 @@ public static boolean validate(CompiledSchema schema, String instance)
 
 ---
 
-### `validateWithDetails(CompiledSchema schema, String instance`
+### `validateWithDetails(CompiledSchema schema, String instance)`
 
 **Validates a JSON instance against a schema and returns detailed validation results.**
 ```java
-public static ValidationResult validateWithDetails(CompiledSchema schema, String instance)
+public ValidationResult validateWithDetails(CompiledSchema schema, String instance)
 ```
 
 - **Parameters:**
@@ -61,45 +61,46 @@ public static ValidationResult validateWithDetails(CompiledSchema schema, String
 
 ### Basic Boolean Validation
 ```java
-String schemaJson = "{"
-+ ""$schema": "https://json-schema.org/draft/2020-12/schema\","
-+ ""type": "string""
-+ "}";
+String schemaJson = """
+    {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "string"
+    }
+    """;
 
-try (CompiledSchema schema = Blaze.compile(schemaJson)) {
+SchemaCompiler compiler = new SchemaCompiler();
+try (CompiledSchema schema = compiler.compile(schemaJson)) {
+    BlazeValidator validator = new BlazeValidator();
+    boolean validStringResult = validator.validate(schema, "\"hello\"");
 
-boolean validStringResult = Blaze.validate(schema, ""hello"");
-
-System.out.println("Validation result for "hello": " + validStringResult);
-assertTrue(validStringResult);
+    System.out.println("Validation result for \"hello\": " + validStringResult);
 }
-
 ```
 
 ---
 
 ### Detailed Validation with Error Reporting
 ```java
-String schemaJson = "{"
-+ "\"$schema\": \"https://json-schema.org/draft/2020-12/schema\","
-+ "\"enum\": [\"red\", \"green\", \"blue\"]"
-+ "}";
+String schemaJson = """
+    {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "enum": ["red", "green", "blue"]
+    }
+    """;
 
 String instance = "\"yellow\"";
 
-try (CompiledSchema compiledSchema = Blaze.compile(schemaJson)) {
-    ValidationResult result = Blaze.validateWithDetails(compiledSchema, instance);
+SchemaCompiler compiler = new SchemaCompiler();
+try (CompiledSchema compiledSchema = compiler.compile(schemaJson)) {
+    BlazeValidator validator = new BlazeValidator();
+    ValidationResult result = validator.validateWithDetails(compiledSchema, instance);
 
     System.out.println(result.isValid());
 
     if (!result.isValid()) {
         result.getErrors().forEach(System.out::println);
     }
-
-    assertFalse(result.isValid());
 }
-
-
 ```
 
 **Sample error output:**
