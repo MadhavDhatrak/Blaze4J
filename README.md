@@ -14,13 +14,13 @@ Blaze4J enables Java developers to validate JSON documents against JSON Schema s
 
 - [Overview](#overview)
 - [Features](#features)
-- [Installation](./CONTRIBUTING.md) 
+- [Installation](#installation) 
 - [Usage](#usage) 
 - [Supported Drafts](#supported-drafts) 
 - [Supported Resolvers](#supported-resolvers) 
 - [API Documentation](#api-documentation)
-  - [Compiler API](./docs/compiler.md)
-  - [Validator API](./docs/validator.md)
+  - [Compiler API](./docs/Compiler.md)
+  - [Validator API](./docs/Validator.md)
 - [Best Practices](#best-practices)
 - [Contributing](#contributing)
 - [Credits](#credits)
@@ -53,7 +53,7 @@ Blaze4J bridges Java and native C++ for **fast, standards-compliant JSON Schema 
 <dependency>
     <groupId>io.github.madhavdhatrak</groupId>
     <artifactId>blaze4j</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
 </dependency>
 
 ```
@@ -61,7 +61,7 @@ Blaze4J bridges Java and native C++ for **fast, standards-compliant JSON Schema 
 **Gradle**
 - Add this to your `build.gradle`:
 ```java
-implementation group: 'io.github.madhavdhatrak', name: 'blaze4j', version: '0.0.2'
+implementation group: 'io.github.madhavdhatrak', name: 'blaze4j', version: '0.0.3'
 ```
 **Testing**
 - **Run your test class using**:
@@ -81,9 +81,9 @@ _**Replace com.example.Test with the path to your test class**_.
 ```java
 package com.example;
 
-import com.github.madhavdhatrak.blaze4j.Blaze;
-import com.github.madhavdhatrak.blaze4j.CompiledSchema;
 import com.github.madhavdhatrak.blaze4j.BlazeValidator;
+import com.github.madhavdhatrak.blaze4j.CompiledSchema;
+import com.github.madhavdhatrak.blaze4j.SchemaCompiler;
 
 public class Test {
     public static void main(String[] args) {
@@ -94,29 +94,32 @@ public class Test {
             }
             """;
 
-        try (CompiledSchema schema = Blaze.compile(schemaJson)) {
-            
+        SchemaCompiler compiler = new SchemaCompiler();
+        try (CompiledSchema schema = compiler.compile(schemaJson)) {
+            BlazeValidator validator = new BlazeValidator();
+
             // Test valid string input
-            boolean validStringResult = Blaze.validate(schema, "\"hello\"");
+            boolean validStringResult = validator.validate(schema, "\"hello\"");
             System.out.println("Validation result for \"hello\": " + validStringResult);
-            
+
             // Test invalid number input
             boolean invalidNumberResult = validator.validate(schema, "42");
             System.out.println("Validation result for 42: " + invalidNumberResult);
         }
     }
 }
+
 ```
 - **Detailed Error Reporting**
 ```java
 package com.example;
 
-import com.github.madhavdhatrak.blaze4j.Blaze;
+import com.github.madhavdhatrak.blaze4j.BlazeValidator;
 import com.github.madhavdhatrak.blaze4j.CompiledSchema;
+import com.github.madhavdhatrak.blaze4j.SchemaCompiler;
 import com.github.madhavdhatrak.blaze4j.ValidationResult;
-import com.github.madhavdhatrak.blaze4j.ValidationError;
 
-public class TestBlaze4j {
+public class DetailedValidationTest {
     public static void main(String[] args) {
         String enumSchemaJson = """
             {
@@ -127,8 +130,10 @@ public class TestBlaze4j {
 
         String invalidEnumInstance = "\"yellow\"";
 
-        try (CompiledSchema compiledSchema = Blaze.compile(enumSchemaJson)) {
-            ValidationResult result = Blaze.validateWithDetails(compiledSchema, invalidEnumInstance);
+        SchemaCompiler compiler = new SchemaCompiler();
+        try (CompiledSchema compiledSchema = compiler.compile(enumSchemaJson)) {
+            BlazeValidator validator = new BlazeValidator();
+            ValidationResult result = validator.validateWithDetails(compiledSchema, invalidEnumInstance);
 
             System.out.println("Is valid: " + result.isValid());
 
@@ -136,6 +141,54 @@ public class TestBlaze4j {
                 System.out.println("Validation errors:");
                 result.getErrors().forEach(System.out::println);
             }
+        }
+    }
+}
+
+```
+
+- **Pre-registered schema example**
+```java
+package com.example;
+
+import com.github.madhavdhatrak.blaze4j.BlazeValidator;
+import com.github.madhavdhatrak.blaze4j.CompiledSchema;
+import com.github.madhavdhatrak.blaze4j.SchemaCompiler;
+import com.github.madhavdhatrak.blaze4j.SchemaRegistry;
+
+public class PreRegisterSchemaTest {
+    public static void main(String[] args) {
+        String integerSchema = """
+            {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "type": "integer"
+            }""";
+
+        // craete the registry and register the schema 
+        SchemaRegistry registry = new SchemaRegistry();
+        registry.register("my-integer-schema", integerSchema);
+        
+        //create the compiler and compile the schema make sure add the registry to the compiler
+        SchemaCompiler compiler = new SchemaCompiler(registry);
+        
+        //create the main schema that will use the registered schema
+        String mainSchema = """
+            {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "$ref": "my-integer-schema"
+            }""";
+
+        // always use try with resources to close the schema
+        try (CompiledSchema schema = compiler.compile(mainSchema)) {
+            // Test valid integer
+            BlazeValidator validator = new BlazeValidator();
+            boolean validResult = validator.validate(schema, "42");
+            System.out.println("validResult: " + validResult);
+            
+            // Test invalid string
+            boolean invalidResult = validator.validate(schema, "\"not an integer\"");
+            System.out.println("invalidResult: " + invalidResult);
+            
         }
     }
 }
