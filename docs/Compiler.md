@@ -35,7 +35,7 @@ The BlazeWrapper Schema Compiler allows you to compile JSON Schema documents int
 public CompiledSchema compile(String schema)
 ```
 - **Parameters:**
-  - `schema`: The JSON schema as a string (supports multiline strings).
+  - `schema`: The JSON schema as a string 
 - **Returns:** `CompiledSchema` — the compiled schema instance.
 - **Behavior:** Internally creates and manages an `Arena` for resource management. Uses the `$schema` property in the schema to determine the dialect.
 
@@ -48,7 +48,7 @@ public CompiledSchema compile(String schema)
 public CompiledSchema compile(String schema, String defaultDialect)
 ```
 - **Parameters:**
-  - `schema`: The JSON schema as a string (supports multiline strings).
+  - `schema`: The JSON schema as a string 
   - `defaultDialect`: The default dialect URI to use if the schema does not specify one.
 - **Returns:** `CompiledSchema` — the compiled schema instance.
 - **Behavior:** Internally creates and manages an `Arena`. If the schema does not specify a `$schema` property, `defaultDialect` is used.
@@ -62,7 +62,7 @@ public CompiledSchema compile(String schema, String defaultDialect)
 public CompiledSchema compile(String schema, Arena arena)
 ```
 - **Parameters:**
-  - `schema`: The JSON schema as a string (supports multiline strings).
+  - `schema`: The JSON schema as a string 
   - `arena`: The memory arena for resource management.
 - **Returns:** `CompiledSchema` — the compiled schema instance.
 - **Behavior:** Uses the provided `Arena` to manage the lifecycle of the compiled schema, allowing for explicit control over memory/resource management.
@@ -76,7 +76,7 @@ public CompiledSchema compile(String schema, Arena arena)
 public CompiledSchema compile(String schema, Arena arena, String defaultDialect)
 ```
 - **Parameters:**
-  - `schema`: The JSON schema as a string (supports multiline strings).
+  - `schema`: The JSON schema as a string 
   - `arena`: The memory arena for resource management.
   - `defaultDialect`: The default dialect URI to use if the schema does not specify one.
 - **Returns:** `CompiledSchema` — the compiled schema instance.
