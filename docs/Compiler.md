@@ -32,11 +32,10 @@ The BlazeWrapper Schema Compiler allows you to compile JSON Schema documents int
 
 **Compiles a JSON schema string using the default dialect specified within the schema (if present)**.
 ```java
-public static CompiledSchema compile(String schema)
-
+public CompiledSchema compile(String schema)
 ```
 - **Parameters:**
-  - `schema`: The JSON schema as a string.
+  - `schema`: The JSON schema as a string (supports multiline strings).
 - **Returns:** `CompiledSchema` — the compiled schema instance.
 - **Behavior:** Internally creates and manages an `Arena` for resource management. Uses the `$schema` property in the schema to determine the dialect.
 
@@ -46,10 +45,10 @@ public static CompiledSchema compile(String schema)
 
 **Compiles a JSON schema string, allowing you to specify a default dialect if the schema does not declare one**
 ```java
-public static CompiledSchema compile(String schema, String defaultDialect)
+public CompiledSchema compile(String schema, String defaultDialect)
 ```
 - **Parameters:**
-  - `schema`: The JSON schema as a string.
+  - `schema`: The JSON schema as a string (supports multiline strings).
   - `defaultDialect`: The default dialect URI to use if the schema does not specify one.
 - **Returns:** `CompiledSchema` — the compiled schema instance.
 - **Behavior:** Internally creates and manages an `Arena`. If the schema does not specify a `$schema` property, `defaultDialect` is used.
@@ -60,10 +59,10 @@ public static CompiledSchema compile(String schema, String defaultDialect)
 
 **Compiles a JSON schema string using the provided Arena for resource management.**
 ```java
-public static CompiledSchema compile(String schema, Arena arena)
+public CompiledSchema compile(String schema, Arena arena)
 ```
 - **Parameters:**
-  - `schema`: The JSON schema as a string.
+  - `schema`: The JSON schema as a string (supports multiline strings).
   - `arena`: The memory arena for resource management.
 - **Returns:** `CompiledSchema` — the compiled schema instance.
 - **Behavior:** Uses the provided `Arena` to manage the lifecycle of the compiled schema, allowing for explicit control over memory/resource management.
@@ -74,10 +73,10 @@ public static CompiledSchema compile(String schema, Arena arena)
 
 **Compiles a JSON schema string with an explicit default dialect, using the provided Arena for resource management.**
 ```java
-public static CompiledSchema compile(String schema, Arena arena, String defaultDialect)
+public CompiledSchema compile(String schema, Arena arena, String defaultDialect)
 ```
 - **Parameters:**
-  - `schema`: The JSON schema as a string.
+  - `schema`: The JSON schema as a string (supports multiline strings).
   - `arena`: The memory arena for resource management.
   - `defaultDialect`: The default dialect URI to use if the schema does not specify one.
 - **Returns:** `CompiledSchema` — the compiled schema instance.
@@ -88,56 +87,59 @@ public static CompiledSchema compile(String schema, Arena arena, String defaultD
 
 ### Example 1: Compiling with Schema-Declared Dialect
 ```java
-String schemaJson = "{"
-+ ""$schema": "https://json-schema.org/draft/2020-12/schema\","
-+ ""type": "string""
-+ "}";
+String schemaJson = """
+    {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "string"
+    }
+    """;
 
-try (CompiledSchema schema = Blaze.compile(schemaJson)) {
-BlazeValidator validator = new BlazeValidator();
+SchemaCompiler compiler = new SchemaCompiler();
+try (CompiledSchema schema = compiler.compile(schemaJson)) {
+    BlazeValidator validator = new BlazeValidator();
 
-boolean validStringResult = validator.validate(schema, "\"hello\"");
-System.out.println("Validation result for \"hello\": " + validStringResult);
-assertTrue(validStringResult);
+    boolean validStringResult = validator.validate(schema, "\"hello\"");
+    System.out.println("Validation result for \"hello\": " + validStringResult);
 }
-
 ```
 ### Example 2: Compiling with Explicit Default Dialect
 ```java
-String schemaJson = "{"
-+ ""type": "string""
-+ "}";
+String schemaJson = """
+    {
+        "type": "string"
+    }
+    """;
 
 String defaultDialect = "https://json-schema.org/draft/2020-12/schema";
 
-try (CompiledSchema schema = Blaze.compile(schemaJson, defaultDialect)) {
-BlazeValidator validator = new BlazeValidator();
+SchemaCompiler compiler = new SchemaCompiler();
+try (CompiledSchema schema = compiler.compile(schemaJson, defaultDialect)) {
+    BlazeValidator validator = new BlazeValidator();
 
-boolean validStringResult = validator.validate(schema, "\"world\"");
-System.out.println("Validation result for \"world\": " + validStringResult);
-assertTrue(validStringResult);
+    boolean validStringResult = validator.validate(schema, "\"world\"");
+    System.out.println("Validation result for \"world\": " + validStringResult);
 }
-
 ```
 
 ### Example 3: Compiling with Arena (Resource Management Control)
 ```java
 import java.lang.foreign.Arena;
 
-String schemaJson = "{"
-+ ""$schema": "https://json-schema.org/draft/2020-12/schema\","
-+ ""type": "string""
-+ "}";
+String schemaJson = """
+    {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "string"
+    }
+    """;
 
+SchemaCompiler compiler = new SchemaCompiler();
 try (Arena arena = Arena.ofConfined();
-CompiledSchema compiledSchema = Blaze.compile(schemaJson, arena)) {
-BlazeValidator validator = new BlazeValidator();
+     CompiledSchema compiledSchema = compiler.compile(schemaJson, arena)) {
+    BlazeValidator validator = new BlazeValidator();
 
-boolean validStringResult = validator.validate(compiledSchema, "\"hello\"");
-System.out.println("Validation result for \"hello\": " + validStringResult);
-assertTrue(validStringResult);
+    boolean validStringResult = validator.validate(compiledSchema, "\"hello\"");
+    System.out.println("Validation result for \"hello\": " + validStringResult);
 }
-
 ```
 
 
@@ -145,19 +147,21 @@ assertTrue(validStringResult);
 ```java
 import java.lang.foreign.Arena;
 
-String schemaJson = "{"
-+ ""type": "string""
-+ "}";
+String schemaJson = """
+    {
+        "type": "string"
+    }
+    """;
 
 String defaultDialect = "https://json-schema.org/draft/2020-12/schema";
 
+SchemaCompiler compiler = new SchemaCompiler();
 try (Arena arena = Arena.ofConfined();
-CompiledSchema compiledSchema = Blaze.compile(schemaJson, arena, defaultDialect)) {
-BlazeValidator validator = new BlazeValidator();
+     CompiledSchema compiledSchema = compiler.compile(schemaJson, arena, defaultDialect)) {
+    BlazeValidator validator = new BlazeValidator();
 
-boolean validStringResult = validator.validate(compiledSchema, "\"world\"");
-System.out.println("Validation result for \"world\": " + validStringResult);
-assertTrue(validStringResult);
+    boolean validStringResult = validator.validate(compiledSchema, "\"world\"");
+    System.out.println("Validation result for \"world\": " + validStringResult);
 }
 ```
 
