@@ -2,6 +2,7 @@
 #include <sourcemeta/blaze/evaluator.h>
 #include <sourcemeta/core/json.h>
 #include <sourcemeta/core/jsonschema.h>
+#include <sourcemeta/core/jsonpointer.h>
 #include <string>
 #include <cstring>
 #include <sstream>
@@ -167,23 +168,56 @@ BLAZE_EXPORT char* blaze_validate_with_output(int64_t schemaHandle, const char* 
         auto json_instance = sourcemeta::core::parse_json(instance_str);
         auto* schema_template = reinterpret_cast<sourcemeta::blaze::Template*>(schemaHandle);
         
+        // Collect errors using callback
+        struct ErrorInfo {
+            std::string message;
+            std::string instance_location;
+            std::string evaluate_path;
+        };
+        std::vector<ErrorInfo> errors;
+        
+        auto callback = [&errors](
+            const sourcemeta::blaze::EvaluationType type,
+            bool result,
+            const sourcemeta::blaze::Instruction &instruction,
+            const sourcemeta::core::WeakPointer &evaluate_path,
+            const sourcemeta::core::WeakPointer &instance_location,
+            const sourcemeta::core::JSON &annotation) -> void {
+            if (!result) {
+                ErrorInfo error;
+                
+                // Extract instance location
+                std::ostringstream instance_ss;
+                sourcemeta::core::stringify(instance_location, instance_ss);
+                error.instance_location = instance_ss.str();
+                
+                // Extract schema path
+                std::ostringstream path_ss;
+                sourcemeta::core::stringify(evaluate_path, path_ss);
+                error.evaluate_path = path_ss.str();
+                
+                // Create error message from instruction
+                error.message = "Validation failed at " + error.instance_location + 
+                               " (schema path: " + error.evaluate_path + ")";
+                
+                errors.push_back(error);
+            }
+        };
+        
         sourcemeta::blaze::Evaluator evaluator;
-        sourcemeta::blaze::SimpleOutput output{json_instance};
-        bool valid = evaluator.validate(*schema_template, json_instance, std::ref(output));
+        bool valid = evaluator.validate(*schema_template, json_instance, callback);
         
         // Build JSON result
         std::ostringstream json_ss;
         json_ss << "{\"valid\":" << (valid ? "true" : "false");
-        if (!valid) {
+        if (!valid && !errors.empty()) {
             json_ss << ",\"errors\":[";
             bool first_error = true;
-            for (const auto& entry : output) {
+            for (const auto& error : errors) {
                 if (!first_error) {
                     json_ss << ",";
                 }
                 first_error = false;
-                std::string instance_loc_str = sourcemeta::core::to_string(entry.instance_location);
-                std::string eval_path_str = sourcemeta::core::to_string(entry.evaluate_path);
                 // Basic escaping for quotes and backslashes
                 auto escape = [](const std::string& s) {
                     std::string out;
@@ -193,9 +227,9 @@ BLAZE_EXPORT char* blaze_validate_with_output(int64_t schemaHandle, const char* 
                     }
                     return out;
                 };
-                json_ss << "{\"message\":\"" << escape(entry.message)
-                        << "\",\"instance_location\":\"" << escape(instance_loc_str)
-                        << "\",\"evaluate_path\":\"" << escape(eval_path_str) << "\"}";
+                json_ss << "{\"message\":\"" << escape(error.message) 
+                       << "\",\"instance_location\":\"" << escape(error.instance_location)
+                       << "\",\"evaluate_path\":\"" << escape(error.evaluate_path) << "\"}";
             }
             json_ss << "]";
         }
